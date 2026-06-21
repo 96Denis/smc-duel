@@ -706,7 +706,7 @@
       </div>
 
       <div class="errbox hidden" id="setupErr"></div>
-      <p class="footer-note">25 de întrebări, trase aleatoriu dintr-o bancă de 120, identice pentru voi doi în acest
+      <p class="footer-note">25 de întrebări, trase aleatoriu dintr-o bancă de 121, identice pentru voi doi în acest
         meci.</p>
     </div>
 
@@ -1288,6 +1288,18 @@
         ],
         c: [0, 1, 2, 3, 4]
       },
+      {
+        type: "order",
+        t: "Ordonați următoarele etape, în funcție de principiul de funcționare al unei întreruperi (după ce instrucțiunea curentă este finalizată):",
+        o: [
+          "Controlul programului este transferat la rutina de întrerupere",
+          "Sistemul de întreruperi este oprit",
+          "Se încarcă adresa de început a rutinei de întrerupere",
+          "Se execută rutina de întrerupere",
+          "Când RETI este atins se revine la programul principal"
+        ],
+        c: [0, 1, 2, 3, 4]
+      }
     ];
 
     const QUIZ_LEN = 25;
