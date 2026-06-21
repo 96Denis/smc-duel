@@ -862,14 +862,18 @@ function nextStep(){
 }
 
 async function finishMyQuiz(){
-  await db.ref(`rooms/${roomCode}/players/${myRole}`).update({
-    finished: true, score: myScore, progress: QUIZ_LEN, answers: myAnswers
-  });
   document.getElementById('myFinalScore').textContent = myScore;
   show('screen-waitresult');
-  if(lastRoomData) db.ref('rooms/'+roomCode).set(lastRoomData); // no-op safeguard, listener will refresh anyway
-  db.ref('rooms/'+roomCode+'/status').set('done_check');
+
+  // Actualizăm doar jucătorul curent, fără a suprascrie camera cu cache-ul local învechit
+  await db.ref(`rooms/${roomCode}/players/${myRole}`).update({
+    finished: true, 
+    score: myScore, 
+    progress: QUIZ_LEN, 
+    answers: myAnswers
+  });
 }
+
 
 /* ============== RESULTS ============== */
 function showResults(data){
