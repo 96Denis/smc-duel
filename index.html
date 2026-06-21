@@ -1,1011 +1,1847 @@
 <!DOCTYPE html>
 <html lang="ro">
+
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>SMC Duel — Remote</title>
-<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script>
-<style>
-  :root{
-    --bg: #0b1410;
-    --panel: #0f1d17;
-    --panel-2: #122319;
-    --line: #1d3b2a;
-    --text: #eaf3ec;
-    --muted: #7fa890;
-    --p1: #39ff8f;
-    --p1-dim: #1d6b41;
-    --p2: #ffb84d;
-    --p2-dim: #8a5a1f;
-    --bad: #ff5c5c;
-    --mono: 'JetBrains Mono', 'SF Mono', Consolas, monospace;
-    --serif: 'Space Grotesk', 'Segoe UI', sans-serif;
-  }
-  *{box-sizing:border-box;}
-  html,body{margin:0;padding:0;}
-  body{
-    background:
-      radial-gradient(circle at 15% 10%, rgba(57,255,143,0.06), transparent 40%),
-      radial-gradient(circle at 85% 90%, rgba(255,184,77,0.05), transparent 40%),
-      var(--bg);
-    color:var(--text);
-    font-family: var(--serif);
-    min-height:100vh;
-    -webkit-font-smoothing:antialiased;
-  }
-  .bg-grid{
-    position:fixed; inset:0; pointer-events:none; z-index:0;
-    background-image:
-      linear-gradient(rgba(57,255,143,0.035) 1px, transparent 1px),
-      linear-gradient(90deg, rgba(57,255,143,0.035) 1px, transparent 1px);
-    background-size: 36px 36px;
-    mask-image: radial-gradient(circle at 50% 30%, black, transparent 75%);
-  }
-  .wrap{
-    position:relative; z-index:1;
-    max-width: 720px;
-    margin: 0 auto;
-    padding: 28px 20px 60px;
-    min-height:100vh;
-    display:flex; flex-direction:column;
-  }
-  header{
-    display:flex; align-items:center; justify-content:space-between;
-    margin-bottom: 18px;
-  }
-  .brand{display:flex; align-items:center; gap:10px; font-family: var(--mono); letter-spacing: 0.5px;}
-  .brand .chip{width:10px;height:10px;border-radius:2px; background:var(--p1); box-shadow:0 0 12px var(--p1);}
-  .brand b{font-size:15px;}
-  .brand span{color:var(--muted); font-size:12px;}
-  .conn{font-family:var(--mono); font-size:11px; display:flex; align-items:center; gap:6px;}
-  .conn .dot{width:7px;height:7px;border-radius:50%; background:var(--muted);}
-  .conn.ok .dot{background:var(--p1); box-shadow:0 0 6px var(--p1);}
-  .conn.bad .dot{background:var(--bad);}
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>SMC Duel — Remote</title>
+  <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script>
+  <style>
+    :root {
+      --bg: #0b1410;
+      --panel: #0f1d17;
+      --panel-2: #122319;
+      --line: #1d3b2a;
+      --text: #eaf3ec;
+      --muted: #7fa890;
+      --p1: #39ff8f;
+      --p1-dim: #1d6b41;
+      --p2: #ffb84d;
+      --p2-dim: #8a5a1f;
+      --bad: #ff5c5c;
+      --mono: 'JetBrains Mono', 'SF Mono', Consolas, monospace;
+      --serif: 'Space Grotesk', 'Segoe UI', sans-serif;
+    }
 
-  .card{
-    background: linear-gradient(180deg, var(--panel), var(--panel-2));
-    border:1px solid var(--line); border-radius: 14px;
-    padding: 26px 24px; box-shadow: 0 20px 60px -30px rgba(0,0,0,0.7);
-  }
+    * {
+      box-sizing: border-box;
+    }
 
-  h1{font-size: 28px; margin: 6px 0 10px; line-height:1.15; letter-spacing:-0.02em;}
-  h1 .accent{color:var(--p1);}
-  p.lead{color:var(--muted); font-size:15px; line-height:1.6; margin: 0 0 22px;}
+    html,
+    body {
+      margin: 0;
+      padding: 0;
+    }
 
-  .field{margin-bottom:16px;}
-  .field label{display:block; font-family:var(--mono); font-size:11px; text-transform:uppercase; letter-spacing:0.08em; color:var(--muted); margin-bottom:7px;}
-  .field input{
-    width:100%; background:#081008; border:1px solid var(--line); border-radius:8px;
-    padding:12px 14px; color:var(--text); font-family:var(--serif); font-size:16px; outline:none;
-    transition: border-color .15s;
-  }
-  .field input:focus{border-color:var(--p1);}
-  .field input.code{font-family:var(--mono); letter-spacing:0.3em; text-transform:uppercase; font-size:20px; text-align:center;}
+    body {
+      background:
+        radial-gradient(circle at 15% 10%, rgba(57, 255, 143, 0.06), transparent 40%),
+        radial-gradient(circle at 85% 90%, rgba(255, 184, 77, 0.05), transparent 40%),
+        var(--bg);
+      color: var(--text);
+      font-family: var(--serif);
+      min-height: 100vh;
+      -webkit-font-smoothing: antialiased;
+    }
 
-  button.primary{
-    width:100%; background:var(--p1); color:#06190f; border:none; border-radius:9px;
-    padding:14px 16px; font-family:var(--mono); font-weight:700; font-size:14px;
-    letter-spacing:0.04em; text-transform:uppercase; cursor:pointer;
-    transition: transform .1s, box-shadow .15s;
-  }
-  button.primary:hover{transform:translateY(-1px); box-shadow:0 8px 24px -8px rgba(57,255,143,0.5);}
-  button.primary:disabled{opacity:0.35; cursor:not-allowed; transform:none; box-shadow:none;}
-  button.ghost{
-    width:100%; background:transparent; border:1px solid var(--line); color:var(--muted);
-    border-radius:9px; padding:12px 16px; font-family:var(--mono); font-size:12px; cursor:pointer; margin-top:10px;
-  }
-  button.ghost:hover{color:var(--text); border-color:var(--p1-dim);}
-  .tabbar{display:flex; gap:8px; margin-bottom:20px;}
-  .tabbtn{flex:1; padding:10px; text-align:center; border:1px solid var(--line); border-radius:8px;
-    font-family:var(--mono); font-size:12px; color:var(--muted); cursor:pointer; text-transform:uppercase; letter-spacing:0.05em;}
-  .tabbtn.active{border-color:var(--p1); color:var(--p1); background:rgba(57,255,143,0.07);}
+    .bg-grid {
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+      z-index: 0;
+      background-image:
+        linear-gradient(rgba(57, 255, 143, 0.035) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(57, 255, 143, 0.035) 1px, transparent 1px);
+      background-size: 36px 36px;
+      mask-image: radial-gradient(circle at 50% 30%, black, transparent 75%);
+    }
 
-  .footer-note{text-align:center; color:var(--muted); font-family:var(--mono); font-size:11px; margin-top:18px; line-height:1.7;}
+    .wrap {
+      position: relative;
+      z-index: 1;
+      max-width: 720px;
+      margin: 0 auto;
+      padding: 28px 20px 60px;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
 
-  .roomcode-display{
-    text-align:center; font-family:var(--mono); font-size:38px; font-weight:800;
-    letter-spacing:0.25em; color:var(--p1); margin: 18px 0; padding:18px;
-    border:1px dashed var(--p1-dim); border-radius:12px; background:rgba(57,255,143,0.05);
-  }
+    header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 18px;
+    }
 
-  .waitlist{display:flex; flex-direction:column; gap:10px; margin: 18px 0 24px;}
-  .waitrow{display:flex; align-items:center; gap:10px; padding:12px 14px; border:1px solid var(--line); border-radius:10px;}
-  .waitrow .dot2{width:9px;height:9px;border-radius:50%; background:var(--muted); flex:0 0 9px;}
-  .waitrow.joined .dot2{background:var(--p1); box-shadow:0 0 8px var(--p1);}
-  .waitrow .nm{font-family:var(--mono); font-size:13px; flex:1;}
-  .waitrow .st{font-family:var(--mono); font-size:11px; color:var(--muted);}
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      font-family: var(--mono);
+      letter-spacing: 0.5px;
+    }
 
-  .spinner{
-    width:16px; height:16px; border:2px solid var(--line); border-top-color:var(--p1);
-    border-radius:50%; animation: spin 0.8s linear infinite; display:inline-block;
-  }
-  @keyframes spin{to{transform:rotate(360deg);}}
+    .brand .chip {
+      width: 10px;
+      height: 10px;
+      border-radius: 2px;
+      background: var(--p1);
+      box-shadow: 0 0 12px var(--p1);
+    }
 
-  .quiz-top{display:flex; justify-content:space-between; align-items:center; margin-bottom:16px;}
-  .player-tag{display:flex; align-items:center; gap:8px; font-family:var(--mono); font-size:13px; font-weight:700;}
-  .player-tag .dot{width:9px;height:9px;border-radius:50%; background:var(--p1); box-shadow:0 0 8px var(--p1);}
-  .qcounter{font-family:var(--mono); font-size:12px; color:var(--muted);}
-  .progress-bar{height:4px; background:var(--line); border-radius:2px; overflow:hidden; margin-bottom:10px;}
-  .progress-fill{height:100%; background:var(--p1); transition: width .25s ease;}
-  .oppo-progress{font-family:var(--mono); font-size:11px; color:var(--muted); margin-bottom:18px;}
+    .brand b {
+      font-size: 15px;
+    }
 
-  .qtype-badge{display:inline-block; font-family:var(--mono); font-size:10px; text-transform:uppercase; letter-spacing:0.08em;
-    color:var(--muted); border:1px solid var(--line); padding:3px 8px; border-radius:6px; margin-bottom:12px;}
-  .qtext{font-size:19px; line-height:1.45; margin: 0 0 20px; font-weight:600;}
+    .brand span {
+      color: var(--muted);
+      font-size: 12px;
+    }
 
-  .opt{display:flex; align-items:flex-start; gap:12px; padding:13px 14px; border:1px solid var(--line); border-radius:10px;
-    margin-bottom:10px; cursor:pointer; background:#081108; transition: border-color .12s, background .12s; font-size:14.5px; line-height:1.4;}
-  .opt:hover{border-color:var(--p1-dim);}
-  .opt .mark{flex:0 0 18px; height:18px; margin-top:1px; border:1.5px solid var(--muted); border-radius:5px;
-    display:flex; align-items:center; justify-content:center; font-size:11px; color:transparent;}
-  .opt.selected{border-color:var(--p1); background:rgba(57,255,143,0.07);}
-  .opt.selected .mark{border-color:var(--p1); color:var(--p1); background:rgba(57,255,143,0.15);}
-  .opt.correct{border-color:var(--p1); background:rgba(57,255,143,0.12);}
-  .opt.correct .mark{border-color:var(--p1); color:var(--p1);}
-  .opt.incorrect{border-color:var(--bad); background:rgba(255,92,92,0.08);}
-  .opt.incorrect .mark{border-color:var(--bad); color:var(--bad);}
-  .opt.disabled{cursor:default;}
+    .conn {
+      font-family: var(--mono);
+      font-size: 11px;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
 
-  .feedback{font-family:var(--mono); font-size:12.5px; padding:10px 12px; border-radius:8px; margin: 4px 0 18px;}
-  .feedback.ok{background:rgba(57,255,143,0.1); color:var(--p1); border:1px solid var(--p1-dim);}
-  .feedback.bad{background:rgba(255,92,92,0.1); color:#ff8a8a; border:1px solid #6b2424;}
+    .conn .dot {
+      width: 7px;
+      height: 7px;
+      border-radius: 50%;
+      background: var(--muted);
+    }
 
-  .vs-wrap{text-align:center; padding: 6px 0 10px;}
-  .vs-wrap h2{font-size:13px; letter-spacing:0.15em; text-transform:uppercase; color:var(--muted); margin:0 0 22px; font-family:var(--mono);}
-  .vs-row{display:grid; grid-template-columns: 1fr auto 1fr; align-items:center; gap:14px; margin-bottom:28px;}
-  .vs-player{text-align:center;}
-  .vs-player .name{font-family:var(--mono); font-size:13px; color:var(--muted); margin-bottom:6px; word-break:break-word;}
-  .vs-player .score{font-size:46px; font-weight:800; line-height:1;}
-  .vs-player.p1 .score{color:var(--p1);}
-  .vs-player.p2 .score{color:var(--p2);}
-  .vs-mid{font-family:var(--mono); font-size:13px; color:var(--muted);}
-  .winner-banner{text-align:center; padding:16px; border-radius:10px; margin-bottom:24px; font-family:var(--mono); font-size:14px; letter-spacing:0.04em;}
-  .winner-banner.p1{background:rgba(57,255,143,0.1); border:1px solid var(--p1-dim); color:var(--p1);}
-  .winner-banner.p2{background:rgba(255,184,77,0.1); border:1px solid var(--p2-dim); color:var(--p2);}
-  .winner-banner.tie{background:rgba(255,255,255,0.05); border:1px solid var(--line); color:var(--muted);}
+    .conn.ok .dot {
+      background: var(--p1);
+      box-shadow: 0 0 6px var(--p1);
+    }
 
-  .barcompare{display:flex; flex-direction:column; gap:10px; margin-bottom:26px;}
-  .barrow{display:flex; align-items:center; gap:10px; font-family:var(--mono); font-size:11px;}
-  .barrow .label{width:80px; flex:0 0 80px; color:var(--muted); overflow:hidden; text-overflow:ellipsis; white-space:nowrap;}
-  .barrow .track{flex:1; height:10px; background:var(--line); border-radius:5px; overflow:hidden;}
-  .barrow .fill{height:100%; border-radius:5px; transition:width .6s ease;}
-  .barrow.p1 .fill{background:var(--p1);}
-  .barrow.p2 .fill{background:var(--p2);}
-  .barrow .val{width:30px; flex:0 0 30px; text-align:right;}
+    .conn.bad .dot {
+      background: var(--bad);
+    }
 
-  .waitresult{text-align:center; padding:30px 10px; color:var(--muted); font-family:var(--mono); font-size:13px;}
+    .card {
+      background: linear-gradient(180deg, var(--panel), var(--panel-2));
+      border: 1px solid var(--line);
+      border-radius: 14px;
+      padding: 26px 24px;
+      box-shadow: 0 20px 60px -30px rgba(0, 0, 0, 0.7);
+    }
 
-  .hidden{display:none !important;}
-  .errbox{background:rgba(255,92,92,0.1); border:1px solid #6b2424; color:#ff8a8a; padding:12px 14px;
-    border-radius:8px; font-family:var(--mono); font-size:12.5px; margin-bottom:16px;}
+    h1 {
+      font-size: 28px;
+      margin: 6px 0 10px;
+      line-height: 1.15;
+      letter-spacing: -0.02em;
+    }
 
-  @media (max-width:480px){
-    .card{padding:20px 16px;}
-    h1{font-size:22px;}
-    .qtext{font-size:17px;}
-    .roomcode-display{font-size:30px;}
-  }
-</style>
+    h1 .accent {
+      color: var(--p1);
+    }
+
+    p.lead {
+      color: var(--muted);
+      font-size: 15px;
+      line-height: 1.6;
+      margin: 0 0 22px;
+    }
+
+    .field {
+      margin-bottom: 16px;
+    }
+
+    .field label {
+      display: block;
+      font-family: var(--mono);
+      font-size: 11px;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      color: var(--muted);
+      margin-bottom: 7px;
+    }
+
+    .field input {
+      width: 100%;
+      background: #081008;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      padding: 12px 14px;
+      color: var(--text);
+      font-family: var(--serif);
+      font-size: 16px;
+      outline: none;
+      transition: border-color .15s;
+    }
+
+    .field input:focus {
+      border-color: var(--p1);
+    }
+
+    .field input.code {
+      font-family: var(--mono);
+      letter-spacing: 0.3em;
+      text-transform: uppercase;
+      font-size: 20px;
+      text-align: center;
+    }
+
+    button.primary {
+      width: 100%;
+      background: var(--p1);
+      color: #06190f;
+      border: none;
+      border-radius: 9px;
+      padding: 14px 16px;
+      font-family: var(--mono);
+      font-weight: 700;
+      font-size: 14px;
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+      cursor: pointer;
+      transition: transform .1s, box-shadow .15s;
+    }
+
+    button.primary:hover {
+      transform: translateY(-1px);
+      box-shadow: 0 8px 24px -8px rgba(57, 255, 143, 0.5);
+    }
+
+    button.primary:disabled {
+      opacity: 0.35;
+      cursor: not-allowed;
+      transform: none;
+      box-shadow: none;
+    }
+
+    button.ghost {
+      width: 100%;
+      background: transparent;
+      border: 1px solid var(--line);
+      color: var(--muted);
+      border-radius: 9px;
+      padding: 12px 16px;
+      font-family: var(--mono);
+      font-size: 12px;
+      cursor: pointer;
+      margin-top: 10px;
+    }
+
+    button.ghost:hover {
+      color: var(--text);
+      border-color: var(--p1-dim);
+    }
+
+    .tabbar {
+      display: flex;
+      gap: 8px;
+      margin-bottom: 20px;
+    }
+
+    .tabbtn {
+      flex: 1;
+      padding: 10px;
+      text-align: center;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      font-family: var(--mono);
+      font-size: 12px;
+      color: var(--muted);
+      cursor: pointer;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+
+    .tabbtn.active {
+      border-color: var(--p1);
+      color: var(--p1);
+      background: rgba(57, 255, 143, 0.07);
+    }
+
+    .footer-note {
+      text-align: center;
+      color: var(--muted);
+      font-family: var(--mono);
+      font-size: 11px;
+      margin-top: 18px;
+      line-height: 1.7;
+    }
+
+    .roomcode-display {
+      text-align: center;
+      font-family: var(--mono);
+      font-size: 38px;
+      font-weight: 800;
+      letter-spacing: 0.25em;
+      color: var(--p1);
+      margin: 18px 0;
+      padding: 18px;
+      border: 1px dashed var(--p1-dim);
+      border-radius: 12px;
+      background: rgba(57, 255, 143, 0.05);
+    }
+
+    .waitlist {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      margin: 18px 0 24px;
+    }
+
+    .waitrow {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 12px 14px;
+      border: 1px solid var(--line);
+      border-radius: 10px;
+    }
+
+    .waitrow .dot2 {
+      width: 9px;
+      height: 9px;
+      border-radius: 50%;
+      background: var(--muted);
+      flex: 0 0 9px;
+    }
+
+    .waitrow.joined .dot2 {
+      background: var(--p1);
+      box-shadow: 0 0 8px var(--p1);
+    }
+
+    .waitrow .nm {
+      font-family: var(--mono);
+      font-size: 13px;
+      flex: 1;
+    }
+
+    .waitrow .st {
+      font-family: var(--mono);
+      font-size: 11px;
+      color: var(--muted);
+    }
+
+    .spinner {
+      width: 16px;
+      height: 16px;
+      border: 2px solid var(--line);
+      border-top-color: var(--p1);
+      border-radius: 50%;
+      animation: spin 0.8s linear infinite;
+      display: inline-block;
+    }
+
+    @keyframes spin {
+      to {
+        transform: rotate(360deg);
+      }
+    }
+
+    .quiz-top {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 16px;
+    }
+
+    .player-tag {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-family: var(--mono);
+      font-size: 13px;
+      font-weight: 700;
+    }
+
+    .player-tag .dot {
+      width: 9px;
+      height: 9px;
+      border-radius: 50%;
+      background: var(--p1);
+      box-shadow: 0 0 8px var(--p1);
+    }
+
+    .qcounter {
+      font-family: var(--mono);
+      font-size: 12px;
+      color: var(--muted);
+    }
+
+    .progress-bar {
+      height: 4px;
+      background: var(--line);
+      border-radius: 2px;
+      overflow: hidden;
+      margin-bottom: 10px;
+    }
+
+    .progress-fill {
+      height: 100%;
+      background: var(--p1);
+      transition: width .25s ease;
+    }
+
+    .oppo-progress {
+      font-family: var(--mono);
+      font-size: 11px;
+      color: var(--muted);
+      margin-bottom: 18px;
+    }
+
+    .qtype-badge {
+      display: none;
+    }
+
+    .qtext {
+      font-size: 19px;
+      line-height: 1.45;
+      margin: 0 0 20px;
+      font-weight: 600;
+    }
+
+    .opt {
+      display: flex;
+      align-items: flex-start;
+      gap: 12px;
+      padding: 13px 14px;
+      border: 1px solid var(--line);
+      border-radius: 10px;
+      margin-bottom: 10px;
+      cursor: pointer;
+      background: #081108;
+      transition: border-color .12s, background .12s;
+      font-size: 14.5px;
+      line-height: 1.4;
+    }
+
+    .opt:hover {
+      border-color: var(--p1-dim);
+    }
+
+    .opt .mark {
+      flex: 0 0 18px;
+      height: 18px;
+      margin-top: 1px;
+      border: 1.5px solid var(--muted);
+      border-radius: 5px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 11px;
+      color: transparent;
+    }
+
+    .opt.selected {
+      border-color: var(--p1);
+      background: rgba(57, 255, 143, 0.07);
+    }
+
+    .opt.selected .mark {
+      border-color: var(--p1);
+      color: var(--p1);
+      background: rgba(57, 255, 143, 0.15);
+    }
+
+    .opt.correct {
+      border-color: var(--p1);
+      background: rgba(57, 255, 143, 0.12);
+    }
+
+    .opt.correct .mark {
+      border-color: var(--p1);
+      color: var(--p1);
+    }
+
+    .opt.incorrect {
+      border-color: var(--bad);
+      background: rgba(255, 92, 92, 0.08);
+    }
+
+    .opt.incorrect .mark {
+      border-color: var(--bad);
+      color: var(--bad);
+    }
+
+    .opt.disabled {
+      cursor: default;
+    }
+
+    .feedback {
+      font-family: var(--mono);
+      font-size: 12.5px;
+      padding: 10px 12px;
+      border-radius: 8px;
+      margin: 4px 0 18px;
+    }
+
+    .feedback.ok {
+      background: rgba(57, 255, 143, 0.1);
+      color: var(--p1);
+      border: 1px solid var(--p1-dim);
+    }
+
+    .feedback.bad {
+      background: rgba(255, 92, 92, 0.1);
+      color: #ff8a8a;
+      border: 1px solid #6b2424;
+    }
+
+    .vs-wrap {
+      text-align: center;
+      padding: 6px 0 10px;
+    }
+
+    .vs-wrap h2 {
+      font-size: 13px;
+      letter-spacing: 0.15em;
+      text-transform: uppercase;
+      color: var(--muted);
+      margin: 0 0 22px;
+      font-family: var(--mono);
+    }
+
+    .vs-row {
+      display: grid;
+      grid-template-columns: 1fr auto 1fr;
+      align-items: center;
+      gap: 14px;
+      margin-bottom: 28px;
+    }
+
+    .vs-player {
+      text-align: center;
+    }
+
+    .vs-player .name {
+      font-family: var(--mono);
+      font-size: 13px;
+      color: var(--muted);
+      margin-bottom: 6px;
+      word-break: break-word;
+    }
+
+    .vs-player .score {
+      font-size: 46px;
+      font-weight: 800;
+      line-height: 1;
+    }
+
+    .vs-player.p1 .score {
+      color: var(--p1);
+    }
+
+    .vs-player.p2 .score {
+      color: var(--p2);
+    }
+
+    .vs-mid {
+      font-family: var(--mono);
+      font-size: 13px;
+      color: var(--muted);
+    }
+
+    .winner-banner {
+      text-align: center;
+      padding: 16px;
+      border-radius: 10px;
+      margin-bottom: 24px;
+      font-family: var(--mono);
+      font-size: 14px;
+      letter-spacing: 0.04em;
+    }
+
+    .winner-banner.p1 {
+      background: rgba(57, 255, 143, 0.1);
+      border: 1px solid var(--p1-dim);
+      color: var(--p1);
+    }
+
+    .winner-banner.p2 {
+      background: rgba(255, 184, 77, 0.1);
+      border: 1px solid var(--p2-dim);
+      color: var(--p2);
+    }
+
+    .winner-banner.tie {
+      background: rgba(255, 255, 255, 0.05);
+      border: 1px solid var(--line);
+      color: var(--muted);
+    }
+
+    .barcompare {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      margin-bottom: 26px;
+    }
+
+    .barrow {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      font-family: var(--mono);
+      font-size: 11px;
+    }
+
+    .barrow .label {
+      width: 80px;
+      flex: 0 0 80px;
+      color: var(--muted);
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .barrow .track {
+      flex: 1;
+      height: 10px;
+      background: var(--line);
+      border-radius: 5px;
+      overflow: hidden;
+    }
+
+    .barrow .fill {
+      height: 100%;
+      border-radius: 5px;
+      transition: width .6s ease;
+    }
+
+    .barrow.p1 .fill {
+      background: var(--p1);
+    }
+
+    .barrow.p2 .fill {
+      background: var(--p2);
+    }
+
+    .barrow .val {
+      width: 30px;
+      flex: 0 0 30px;
+      text-align: right;
+    }
+
+    .waitresult {
+      text-align: center;
+      padding: 30px 10px;
+      color: var(--muted);
+      font-family: var(--mono);
+      font-size: 13px;
+    }
+
+    .hidden {
+      display: none !important;
+    }
+
+    .errbox {
+      background: rgba(255, 92, 92, 0.1);
+      border: 1px solid #6b2424;
+      color: #ff8a8a;
+      padding: 12px 14px;
+      border-radius: 8px;
+      font-family: var(--mono);
+      font-size: 12.5px;
+      margin-bottom: 16px;
+    }
+
+    @media (max-width:480px) {
+      .card {
+        padding: 20px 16px;
+      }
+
+      h1 {
+        font-size: 22px;
+      }
+
+      .qtext {
+        font-size: 17px;
+      }
+
+      .roomcode-display {
+        font-size: 30px;
+      }
+    }
+  </style>
 </head>
+
 <body>
-<div class="bg-grid"></div>
-<div class="wrap">
+  <div class="bg-grid"></div>
+  <div class="wrap">
 
-  <header>
-    <div class="brand"><div class="chip"></div><b>SMC&nbsp;DUEL</b><span>&nbsp;// remote</span></div>
-    <div class="conn" id="connStatus"><div class="dot"></div><span>conectare...</span></div>
-  </header>
+    <header>
+      <div class="brand">
+        <div class="chip"></div><b>SMC&nbsp;DUEL</b><span>&nbsp;// remote</span>
+      </div>
+      <div class="conn" id="connStatus">
+        <div class="dot"></div><span>conectare...</span>
+      </div>
+    </header>
 
-  <!-- SETUP: choose create or join -->
-  <div class="card" id="screen-setup">
-    <h1>Duel <span class="accent">la distanță.</span></h1>
-    <p class="lead">Creează o cameră, trimite codul colegului tău, și jucați amândoi în același timp, de pe device-urile voastre — primul care termină vede „aștept adversarul”, apoi rezultatul apare live la amândoi.</p>
+    <!-- SETUP: choose create or join -->
+    <div class="card" id="screen-setup">
+      <h1>Duel <span class="accent">la distanță.</span></h1>
+      <p class="lead">Creează o cameră, trimite codul colegului tău, și jucați amândoi în același timp, de pe
+        device-urile voastre — primul care termină vede „aștept adversarul”, apoi rezultatul apare live la amândoi.</p>
 
-    <div class="tabbar">
-      <div class="tabbtn active" id="tabCreate">Creează cameră</div>
-      <div class="tabbtn" id="tabJoin">Intră cu cod</div>
+      <div class="tabbar">
+        <div class="tabbtn active" id="tabCreate">Creează cameră</div>
+        <div class="tabbtn" id="tabJoin">Intră cu cod</div>
+      </div>
+
+      <div id="paneCreate">
+        <div class="field"><label>Nume</label><input type="text" id="createName" placeholder="Numele tău"
+            maxlength="20"></div>
+        <button class="primary" id="createBtn">Creează duelul →</button>
+      </div>
+
+      <div id="paneJoin" class="hidden">
+        <div class="field"><label>Nume</label><input type="text" id="joinName" placeholder="Numele tău" maxlength="20">
+        </div>
+        <div class="field"><label>Cod cameră</label><input type="text" id="joinCode" class="code" placeholder="AB12"
+            maxlength="6"></div>
+        <button class="primary" id="joinBtn">Intră în duel →</button>
+      </div>
+
+      <div class="errbox hidden" id="setupErr"></div>
+      <p class="footer-note">25 de întrebări, trase aleatoriu dintr-o bancă de 120, identice pentru voi doi în acest
+        meci.</p>
     </div>
 
-    <div id="paneCreate">
-      <div class="field"><label>Numele tău</label><input type="text" id="createName" placeholder="Numele tău" maxlength="20"></div>
-      <button class="primary" id="createBtn">Creează duelul →</button>
+    <!-- WAITING ROOM -->
+    <div class="card hidden" id="screen-wait">
+      <h1 style="font-size:22px;">Camera ta</h1>
+      <p class="lead" style="margin-bottom:6px;">Trimite codul ăsta colegului tău:</p>
+      <div class="roomcode-display" id="roomCodeDisplay">----</div>
+      <div class="waitlist" id="waitlist"></div>
+      <button class="primary hidden" id="bothReadyBtn">Începe duelul →</button>
+      <p class="footer-note" id="waitNote">Se așteaptă al doilea jucător...</p>
     </div>
 
-    <div id="paneJoin" class="hidden">
-      <div class="field"><label>Numele tău</label><input type="text" id="joinName" placeholder="Numele tău" maxlength="20"></div>
-      <div class="field"><label>Cod cameră</label><input type="text" id="joinCode" class="code" placeholder="AB12" maxlength="6"></div>
-      <button class="primary" id="joinBtn">Intră în duel →</button>
+    <!-- QUIZ -->
+    <div class="card hidden" id="screen-quiz">
+      <div class="quiz-top">
+        <div class="player-tag">
+          <div class="dot"></div><span id="quizPlayerName">—</span>
+        </div>
+        <div class="qcounter" id="quizCounter">1 / 25</div>
+      </div>
+      <div class="progress-bar">
+        <div class="progress-fill" id="progressFill"></div>
+      </div>
+      <div class="oppo-progress" id="oppoProgress">Adversar: 0/25</div>
+
+      <div class="qtype-badge" id="qTypeBadge">SELECTARE SIMPLĂ</div>
+      <div class="qtext" id="qText">—</div>
+      <div class="opts" id="optsList"></div>
+      <div class="feedback hidden" id="feedbackBox"></div>
+
+      <button class="primary" id="submitBtn">Confirmă răspunsul</button>
     </div>
 
-    <div class="errbox hidden" id="setupErr"></div>
-    <p class="footer-note">25 de întrebări, trase aleatoriu dintr-o bancă de 119, identice pentru voi doi în acest meci.</p>
-  </div>
-
-  <!-- WAITING ROOM -->
-  <div class="card hidden" id="screen-wait">
-    <h1 style="font-size:22px;">Camera ta</h1>
-    <p class="lead" style="margin-bottom:6px;">Trimite codul ăsta colegului tău:</p>
-    <div class="roomcode-display" id="roomCodeDisplay">----</div>
-    <div class="waitlist" id="waitlist"></div>
-    <button class="primary hidden" id="bothReadyBtn">Începe duelul →</button>
-    <p class="footer-note" id="waitNote">Se așteaptă al doilea jucător...</p>
-  </div>
-
-  <!-- QUIZ -->
-  <div class="card hidden" id="screen-quiz">
-    <div class="quiz-top">
-      <div class="player-tag"><div class="dot"></div><span id="quizPlayerName">—</span></div>
-      <div class="qcounter" id="quizCounter">1 / 25</div>
-    </div>
-    <div class="progress-bar"><div class="progress-fill" id="progressFill"></div></div>
-    <div class="oppo-progress" id="oppoProgress">Adversar: 0/25</div>
-
-    <div class="qtype-badge" id="qTypeBadge">SELECTARE SIMPLĂ</div>
-    <div class="qtext" id="qText">—</div>
-    <div class="opts" id="optsList"></div>
-    <div class="feedback hidden" id="feedbackBox"></div>
-
-    <button class="primary" id="submitBtn">Confirmă răspunsul</button>
-  </div>
-
-  <!-- WAIT FOR OPPONENT TO FINISH -->
-  <div class="card hidden" id="screen-waitresult">
-    <div class="waitresult">
-      <div class="spinner" style="margin-bottom:16px;"></div>
-      <div style="font-family:var(--mono); font-size:14px; color:var(--text); margin-bottom:6px;">Ai terminat — scor: <b id="myFinalScore" style="color:var(--p1);">0</b>/25</div>
-      <div>Se așteaptă ca adversarul să termine...</div>
-    </div>
-  </div>
-
-  <!-- RESULTS -->
-  <div class="card hidden" id="screen-results">
-    <div class="vs-wrap">
-      <h2>Rezultat final</h2>
-      <div class="vs-row">
-        <div class="vs-player p1"><div class="name" id="resP1Name">—</div><div class="score" id="resP1Score">0</div></div>
-        <div class="vs-mid">/ 25</div>
-        <div class="vs-player p2"><div class="name" id="resP2Name">—</div><div class="score" id="resP2Score">0</div></div>
+    <!-- WAIT FOR OPPONENT TO FINISH -->
+    <div class="card hidden" id="screen-waitresult">
+      <div class="waitresult">
+        <div class="spinner" style="margin-bottom:16px;"></div>
+        <div style="font-family:var(--mono); font-size:14px; color:var(--text); margin-bottom:6px;">Ai terminat — scor:
+          <b id="myFinalScore" style="color:var(--p1);">0</b>/25
+          <div style="margin-top:20px;">
+            Adversar:
+            <span id="waitOpponentProgress">0/25</span>
+          </div>
+        </div>
+        <div>Se așteaptă ca adversarul să termine...</div>
       </div>
     </div>
-    <div class="winner-banner" id="winnerBanner">—</div>
-    <div class="barcompare" id="barCompare"></div>
-    <button class="primary" id="rematchBtn">Revanșă — set nou de 25</button>
-    <button class="ghost" id="reviewBtn">Vezi răspunsurile greșite</button>
+
+    <!-- RESULTS -->
+    <div class="card hidden" id="screen-results">
+      <div class="vs-wrap">
+        <h2>Rezultat final</h2>
+        <div class="vs-row">
+          <div class="vs-player p1">
+            <div class="name" id="resP1Name">—</div>
+            <div class="score" id="resP1Score">0</div>
+          </div>
+          <div class="vs-mid">/ 25</div>
+          <div class="vs-player p2">
+            <div class="name" id="resP2Name">—</div>
+            <div class="score" id="resP2Score">0</div>
+          </div>
+        </div>
+      </div>
+      <div class="winner-banner" id="winnerBanner">—</div>
+      <div class="barcompare" id="barCompare"></div>
+      <button class="primary" id="rematchBtn">Revanșă — set nou de 25</button>
+      <button class="ghost" id="reviewBtn">Vezi răspunsurile greșite</button>
+    </div>
+
+    <!-- REVIEW -->
+    <div class="card hidden" id="screen-review">
+      <h1 style="font-size:22px;">Recapitulare</h1>
+      <p class="lead" style="margin-bottom:14px;">Întrebările unde cel puțin unul dintre voi a greșit.</p>
+      <div id="reviewList"></div>
+      <button class="ghost" id="backToResults">← Înapoi la rezultat</button>
+    </div>
+
   </div>
 
-  <!-- REVIEW -->
-  <div class="card hidden" id="screen-review">
-    <h1 style="font-size:22px;">Recapitulare</h1>
-    <p class="lead" style="margin-bottom:14px;">Întrebările unde cel puțin unul dintre voi a greșit.</p>
-    <div id="reviewList"></div>
-    <button class="ghost" id="backToResults">← Înapoi la rezultat</button>
-  </div>
+  <script>
+    /* ============== FIREBASE CONFIG ============== */
+    const firebaseConfig = {
+      apiKey: "AIzaSyCY6bDNagJHnDKS7UllbTI6mpIjfwk_zM8",
+      authDomain: "smc-duel.firebaseapp.com",
+      databaseURL: "https://smc-duel-default-rtdb.europe-west1.firebasedatabase.app",
+      projectId: "smc-duel",
+      storageBucket: "smc-duel.firebasestorage.app",
+      messagingSenderId: "122934752689",
+      appId: "1:122934752689:web:2d8a8552e71d65a30b3990"
+    };
+    firebase.initializeApp(firebaseConfig);
+    const db = firebase.database();
 
-</div>
-
-<script>
-/* ============== FIREBASE CONFIG ============== */
-const firebaseConfig = {
-  apiKey: "AIzaSyCY6bDNagJHnDKS7UllbTI6mpIjfwk_zM8",
-  authDomain: "smc-duel.firebaseapp.com",
-  databaseURL: "https://smc-duel-default-rtdb.europe-west1.firebasedatabase.app",
-  projectId: "smc-duel",
-  storageBucket: "smc-duel.firebasestorage.app",
-  messagingSenderId: "122934752689",
-  appId: "1:122934752689:web:2d8a8552e71d65a30b3990"
-};
-firebase.initializeApp(firebaseConfig);
-const db = firebase.database();
-
-/* ============== QUESTION BANK ============== */
-const BANK = [
-{t:"Ce este metastabilitatea?", multi:false,
- o:["Imposibilitatea sistemului de a se stabili într-un nivel logic 0/1","O stare de scurtcircuit între VCC și GND","Procesul de cuantizare a unui semnal analogic","O eroare de paritate la transmisia UART"], c:[0]},
-{t:"Un circuit latch cu o mărime de intrare nedefinită poate furniza la ieșire:", multi:true,
- o:["Low","High","Nedefinit","Doar valoarea 0 logic"], c:[0,1,2]},
-{t:"Care sunt tipurile de erori care pot apărea la o conversie analog-numerică?", multi:true,
- o:["Eroarea de offset","Eroarea de cuantizare","Erori de amplificare","Erori de transmisie UART"], c:[0,1,2]},
-{t:"Care dintre următoarele este specifică Unității Aritmetice și Logice (ALU)?", multi:true,
- o:["Realizarea operațiilor matematice și logice","Facilitarea transferului de date între registre și exteriorul CPU","Generarea semnalului de clock al sistemului","Stocarea permanentă a programului"], c:[0,1]},
-{t:"Împărțirea unui interval în subintervale măsurabile se realizează pe parcursul procesului de:", multi:false,
- o:["Eșantionare","Cuantizare","Codificare","Reținere"], c:[1]},
-{t:"Ce este necesar pentru sincronizarea Emițătorului cu Receptorul la comunicația UART?", multi:true,
- o:["Receptorul realizează supraeșantionarea mesajului primit","Utilizarea unui registru cu deplasare și un buffer","Un semnal de clock comun, transmis pe o linie separată","Sincronizare prin handshake hardware obligatoriu"], c:[0,1]},
-{t:"Ce bit se folosește pentru depistarea erorilor în UART?", multi:false,
- o:["Bitul de start","Bitul de paritate","Bitul de stop","Bitul de control"], c:[1]},
-{t:"Cum se pot conecta dispozitive slave SPI?", multi:true,
- o:["Printr-o legătură înlănțuită, dacă nu e necesar transferul slave-master","Prin utilizarea unei linii SS pentru fiecare dispozitiv","Folosind circuite decodificatoare","Doar printr-o singură linie SDA comună"], c:[0,1,2]},
-{t:"Cum se realizează legătura dintre întreruperea propriu-zisă și ISR?", multi:false,
- o:["Cu ajutorul vectorului de întrerupere","Prin polling continuu al registrului de stare","Prin acumulator","Prin magistrala de adrese"], c:[0]},
-{t:"Care este rolul circuitului oscilator?", multi:false,
- o:["Generează semnale de clock","Amplifică semnalul analogic de intrare","Stochează datele temporar","Filtrează zgomotul de pe linia de alimentare"], c:[0]},
-{t:"Cum este adresat dispozitivul slave de către master în comunicația SPI?", multi:false,
- o:["Prin setarea liniei SS pe nivel low","Prin trimiterea unei adrese pe MOSI","Prin front crescător pe SCK","Prin linia MISO"], c:[0]},
-{t:"Care este numărul de biți definiți de producător pentru mesajele de adresare UART?", multi:false,
- o:["Între 2 și 4","Între 5 și 9","Exact 8","Între 10 și 16"], c:[1]},
-{t:"Care sunt modalitățile de implementare a unui ADC?", multi:true,
- o:["Cu buclă de reacție","Fără buclă de reacție","Doar cu interfață I2C","Doar prin software"], c:[0,1]},
-{t:"Care dintre afirmațiile despre rata de transfer UART sunt adevărate?", multi:true,
- o:["Nu poate fi generată orice rată de transfer","Prescalarul trebuie să fie număr întreg","Provine de la clock-ul sistemului","Este mereu identică indiferent de prescalare"], c:[0,1,2]},
-{t:"Care sunt caracteristicile USART?", multi:true,
- o:["Introducerea unui clock comun pentru Emițător și Receptor","Creșterea vitezei de transfer cu factorul de supraeșantionare","Funcționează exclusiv asincron","Nu necesită bit de start/stop"], c:[0,1]},
-{t:"Care dintre următoarele componente aparțin ALU?", multi:true,
- o:["Registre pentru memorare locală","Circuite pentru transferul de date între registre și exterior","Circuite combinaționale și logice","Memoria Flash de program"], c:[0,1,2]},
-{t:"Care dintre caracteristicile unei întreruperi sunt corecte?", multi:true,
- o:["Sistemul poate acționa real-time la un stimul extern","Sistemul de întreruperi poate fi activat/dezactivat","Întreruperile pot avea priorități diferite","Toate întreruperile au mereu aceeași prioritate"], c:[0,1,2]},
-{t:"Care este rolul unui rezistor de pull-up?", multi:true,
- o:["Conectează pinul de intrare la o tensiune predefinită, dacă nu e furnizată de HW extern","Evită apariția unei stări de instabilitate la intrarea unui pin folosit cu buton","Amplifică semnalul digital de ieșire","Reduce consumul de curent al microcontrolerului"], c:[0,1]},
-{t:"Interfața I2C este o interfață de tipul:", multi:false,
- o:["Sincronă, master-slave, half-duplex","Asincronă, point-to-point, full-duplex","Sincronă, full-duplex, fără adresare","Asincronă, broadcast-only"], c:[0]},
-{t:"Care este numărul de biți definiți de producător pentru mesajele de adresare I2C?", multi:false,
- o:["4","7","8","16"], c:[0]},
-{t:"Condiția de STOP pentru transmiterea datelor pe I2C presupune:", multi:true,
- o:["Semnalul SCL pe high","Semnalul SDA pe front crescător (low→high)","Semnalul SCL pe low","Semnalul SDA pe front descrescător"], c:[0,1]},
-{t:"Alegeți afirmațiile corecte despre interfețele de comunicație:", multi:true,
- o:["Interfețele sincrone prezintă risc mai mic de erori de sincronizare între E și R","La interfața asincronă e necesar să se știe de la început rata de transfer","Interfețele sincrone nu necesită niciun semnal de clock","Interfețele asincrone sunt mereu mai rapide decât cele sincrone"], c:[0,1]},
-{t:"Care sunt modurile de adresare pentru comunicația I2C?", multi:false,
- o:["Pe 7 și 10 biți","Doar pe 8 biți","Pe 4 și 6 biți","Pe 16 și 32 biți"], c:[0]},
-{t:"Care este rolul unui circuit de eșantionare-reținere (sample & hold, cu R, C și buffer înainte de ADC)?", multi:false,
- o:["Prevenirea deteriorării rezultatului conversiei în etapa de eșantionare","Amplificarea semnalului de intrare","Generarea tensiunii de referință","Filtrarea armonicilor de înaltă frecvență"], c:[0]},
-{t:"Care sunt caracteristicile adevărate despre tensiunea de referință?", multi:true,
- o:["Este utilizată în procesul de conversie","Poate fi generată în circuit","Poate fi furnizată din exterior","Trebuie să fie mereu egală cu VCC"], c:[0,1,2]},
-{t:"Ce caracteristici trebuie să aibă planul de testare?", multi:true,
- o:["Să îndeplinească toate cerințele din caietul de sarcini","Să verifice funcționarea în scenarii accidentale","Să satisfacă criterii de performanță într-un mediu real","Să fie scris doar după finalizarea produsului"], c:[0,1,2]},
-{t:"Care sunt liniile de comunicație pentru I2C?", multi:false,
- o:["SCL și SDA","MOSI și MISO","TX și RX","SS și SCK"], c:[0]},
-{t:"Care dintre următoarele reprezintă un parametru de configurare al unei rețele UART?", multi:true,
- o:["Bitul de paritate","Bitul de stop","Rata de transfer","Numărul de biți de date"], c:[0,1,2,3]},
-{t:"Care afirmații despre comunicația serială sunt corecte?", multi:true,
- o:["O interfață half-duplex permite transferul doar de la un nod la un moment dat","O interfață full-duplex permite transferul pe ambele părți simultan","Interfața paralelă permite transferul pe mai multe linii de date, de obicei 4 sau 8","Interfața serială transmite mai mulți biți simultan pe linii separate"], c:[0,1,2]},
-{t:"Ce presupune confirmarea primirii datelor pe I2C?", multi:true,
- o:["Receptorul trimite ACK după fiecare 8 biți primiți","ACK presupune trecerea SDA în starea low","ACK presupune trecerea SCL în starea low","Confirmarea se face doar la finalul întregii transmisii"], c:[0,1]},
-{t:"Ce este rezoluția unui ADC?", multi:false,
- o:["Reprezintă numărul de stări de ieșire posibile","Reprezintă viteza maximă de conversie","Reprezintă tensiunea de referință folosită","Reprezintă timpul de eșantionare"], c:[0]},
-{t:"La ce fel de comparații poate fi utilizat un comparator?", multi:true,
- o:["Compararea unui semnal cu o mărime de referință","Compararea a două semnale între ele","Doar compararea unui semnal cu masa (GND)","Doar compararea în domeniul digital"], c:[0,1]},
-{t:"Magistrala de adrese:", multi:true,
- o:["Este unidirecțională","Transmite doar semnale de ieșire din microprocesor","Este bidirecțională, ca și magistrala de date","Transportă semnale de control de citire/scriere"], c:[0,1]},
-{t:"6 biți de date, 1 bit de start, paritate impară, 2 biți de stop — cum se prescurtează configurația?", multi:false,
- o:["602","612","6O2","6E2"], c:[2]},
-{t:"Care sunt modurile de transmisie ale I2C?", multi:true,
- o:["Standard","Rapid","Extra rapid","Turbo"], c:[0,1,2]},
-{t:"Ce duce la pierderea sincronizării în UART?", multi:false,
- o:["Divergența ratei de transfer dintre Emițător și Receptor","Lipsa bitului de paritate","O tensiune de alimentare prea mare","Folosirea unui prescaler par"], c:[0]},
-{t:"Care sunt caracteristicile arhitecturii VON NEUMANN?", multi:true,
- o:["Memorie comună pentru date și instrucțiuni","Execuția unei instrucțiuni în mai multe etape","O singură magistrală de date și instrucțiuni","Memorii separate pentru program și date"], c:[0,1,2]},
-{t:"Care registre sunt importante pentru configurarea unui PORT de intrare/ieșire?", multi:true,
- o:["Registrul de setare a direcției datelor (DDR)","Registrul corespunzător portului (PORT/PIN)","Registrul acumulator","Registrul de stare al ALU"], c:[0,1]},
-{t:"Cum se accesează memoria unui microcontroler?", multi:false,
- o:["La nivelul unui grup de biți numiți celule/locații de memorie, cu adresă unică","Doar bit cu bit, secvențial","Exclusiv prin DMA","Prin magistrala SPI internă"], c:[0]},
-{t:"Memoria de tip flash este o memorie de tip:", multi:false,
- o:["Hibridă (nevolatilă, dar reprogramabilă electric)","Pur volatilă","Doar pentru citire (ROM clasică)","Analogică"], c:[0]},
-{t:"Standardul RS-232 este responsabil pentru:", multi:false,
- o:["Mecanismul de transfer al datelor din punct de vedere al specificațiilor electrice","Protocolul logic I2C","Algoritmul de criptare a datelor seriale","Topologia rețelelor CAN"], c:[0]},
-{t:"Frecvența de intrare maximă procesată de un ADC trebuie să fie mai mică decât:", multi:false,
- o:["Jumătate din frecvența de eșantionare (1/2·fs)","Dublul frecvenței de eșantionare","Frecvența tensiunii de referință","Frecvența de clock a CPU"], c:[0]},
-{t:"Din ce este format un rezonator de cuarț?", multi:false,
- o:["Condensatoare și un cristal de cuarț (circuit oscilator)","Doar o bobină","Un rezistor variabil și o diodă","Un tranzistor și un condensator electrolitic"], c:[0]},
-{t:"Cum se poate implementa un modul de PWM?", multi:false,
- o:["Utilizând incrementarea și/sau decrementarea unui contor (timer)","Doar printr-un convertor digital-analogic extern","Prin filtrare RC pasivă a unui semnal analogic","Prin eșantionare Delta-Sigma"], c:[0]},
-{t:"Care este etapa următoare, după ce controlul a fost transferat către ISR, la apariția unei întreruperi?", multi:false,
- o:["Se încarcă adresa de început a ISR","Se revine direct din întrerupere","Se dezactivează definitiv sistemul de întreruperi","Se șterge conținutul acumulatorului"], c:[0]},
-{t:"Care sunt caracteristicile arhitecturii Harvard?", multi:true,
- o:["Are implementat un mecanism de tip pipeline","Permite execuția unei instrucțiuni într-un singur ciclu de clock","Folosește o singură magistrală comună pentru program și date","Memorie comună pentru date și instrucțiuni"], c:[0,1]},
-{t:"Care sunt caracteristicile UART?", multi:true,
- o:["Utilizează 2 linii: receptor și emițător; în repaus linia este high","Cel mai nesemnificativ bit (LSB) este transmis primul","Este folosit pentru comunicații sincrone","Necesită un clock comun explicit între E și R"], c:[0,1]},
-{t:"Care dintre următoarele caracterizează un watchdog timer?", multi:true,
- o:["Este resetat de microcontroler dacă zona de program a fost executată în intervalul alocat","Resetează programul dacă apare o funcționare incorectă","Generează semnal PWM pentru motor","Funcționează doar atunci când CPU este oprit"], c:[0,1]},
-{t:"Care caracteristici ale circuitului de prescalare sunt adevărate?", multi:true,
- o:["Se recomandă utilizarea celei mai mici valori de prescalare pentru acuratețe maximă","Împarte un semnal de ceas la anumite valori","Mărește frecvența semnalului de ceas","Este folosit exclusiv în comunicația I2C"], c:[0,1]},
-{t:"Ce presupune ACK în cadrul comunicației I2C?", multi:false,
- o:["Trecerea liniei SDA în starea low","Trecerea liniei SCL în starea high","Trimiterea unui octet special de confirmare", "Resetarea barei I2C"], c:[0]},
-{t:"Care este direcția transmiterii pe I2C în funcție de bitul R/W?", multi:true,
- o:["R/W = LOW: masterul trimite date la slave","R/W = HIGH: masterul citește date de la slave","R/W = LOW: masterul citește date de la slave","R/W = HIGH: slave-ul trimite clock-ul"], c:[0,1]},
-{t:"Care resurse trebuie să le conțină OBLIGATORIU un microcontroler?", multi:true,
- o:["Un sistem de întreruperi","O unitate centrală de procesare","Intrări/ieșiri numerice","Un modul ADC integrat"], c:[0,1,2]},
-{t:"Care este cauza apariției erorilor de tip overrun în UART?", multi:false,
- o:["Datele din registrul buffer nu au fost citite în totalitate înainte de a sosi date noi","Linia TX este lăsată în starea low prea mult timp","Tensiunea de alimentare este prea mică","Bitul de paritate lipsește din configurație"], c:[0]},
-{t:"Care este starea liniilor SDA și SCL în repaus (idle) pe I2C?", multi:false,
- o:["HIGH","LOW","Alternanță high/low","Indiferentă (floating)"], c:[0]},
-{t:"Ce este memoria, în contextul unui microcontroler?", multi:false,
- o:["Componenta utilizată pentru stocarea de date și/sau program", "Doar circuitul care generează clock-ul", "Un registru de stare al ALU", "Magistrala de control"], c:[0]},
-{t:"Care dintre proprietățile comunicației SPI sunt adevărate?", multi:true,
- o:["Sincronizarea se poate face pe ambele fronturi ale clock-ului","Este sincronă, de tip punct la punct","Necesită rezistor de pull-up obligatoriu pe SCK","Este întotdeauna half-duplex"], c:[0,1]},
-{t:"Care este formula ratei de transfer (Rt) la UART?", multi:false,
- o:["Rt = f / (S · contor)","Rt = f · S · contor","Rt = S / (f · contor)","Rt = contor / (f · S)"], c:[0]},
-{t:"Ce este un optocuplor?", multi:false,
- o:["Un circuit care permite izolarea galvanică față de alte componente dintr-o schemă electrică","Un tip de rezistor variabil cu lumină","Un convertor analog-digital optic","Un tip de memorie EEPROM"], c:[0]},
-{t:"Care afirmații despre comunicația serială sunt corecte?", multi:true,
- o:["Interfața serială trimite datele secvențial, bit cu bit","Interfețele sincrone folosesc pentru receptor un clock sincronizat cu cel al emițătorului","Interfețele asincrone conțin 2 semnale de clock nesincronizate, transmise explicit","Interfața serială transmite mereu toți biții simultan"], c:[0,1]},
-{t:"Care circuite intră în componența unui sincronizator (pentru semnale asincrone la intrarea unui sistem digital)?", multi:true,
- o:["Circuit de tip latch","Circuit de tip Trigger Schmitt","Convertor digital-analogic","Registru de deplasare cu 8 biți"], c:[0,1]},
-{t:"Care dintre următoarele reprezintă linii de comunicație SPI?", multi:true,
- o:["SS","SCK","MISO","RX"], c:[0,1,2]},
-{t:"Sistemul de întreruperi poate fi prioritizat utilizând:", multi:true,
- o:["Un sistem de prioritizare software","Un tabel al priorităților","Doar ordinea fizică a pinilor","Frecvența de clock a CPU"], c:[0,1]},
-{t:"Ce rol are registrul acumulator?", multi:true,
- o:["Stochează date până când anumite operații vor fi efectuate","Este folosit ca registru de stare (flags)","Conține mereu adresa următoarei instrucțiuni","Generează semnalul de clock al sistemului"], c:[0]},
-{t:"Care sunt sursele care pot activa o întrerupere?", multi:true,
- o:["Un timer","Un ADC","Un modul periferic (ex: UART, SPI)","Doar resetul microcontrolerului"], c:[0,1,2]},
-{t:"Este adevărat că un Timer monitorizează semnale care au o distribuție aleatoare în timp?", multi:false,
- o:["Fals — pentru asta se folosește un counter, nu un timer","Adevărat","Doar dacă e configurat ca PWM","Doar în modul CTC"], c:[0]},
-{t:"Ce trebuie să conțină documentația unui proiect?", multi:true,
- o:["Planul de testare","Diagramele bloc","Descrierea sistemului și codul sursă","Doar codul sursă, fără altă documentație"], c:[0,1,2]},
-{t:"Care este diferența dintre USART și UART?", multi:false,
- o:["USART conține un modul de sincronizare și poate funcționa și sincron, spre deosebire de UART care e doar asincron","UART transmite mai rapid decât USART","USART nu folosește bit de paritate","UART necesită un clock comun extern obligatoriu"], c:[0]},
-{t:"Conversia numărului binar 11011 în zecimal este:", multi:false,
- o:["27","26","25","29"], c:[0]},
-{t:"Un convertor analog-numeric cu aproximații succesive folosește o buclă de reglare (feedback)?", multi:false,
- o:["Adevărat","Fals","Doar la rezoluții peste 12 biți","Doar pentru semnale audio"], c:[0]},
-{t:"Care sunt caracteristicile memoriei SRAM?", multi:true,
- o:["Operare la viteze mari","Volatilă","Reprogramabilă (scriere/citire directă)","Nevolatilă, păstrează datele fără alimentare"], c:[0,1,2]},
-{t:"Care sunt caracteristicile unui timer simplu?", multi:true,
- o:["Numără un interval de timp bazat pe ceasul intern al microcontrolerului","Își incrementează valoarea la fiecare ciclu de ceas","Poate avea moduri Normal sau CTC","Numărarea se poate face doar crescător (up)"], c:[0,1,2]},
-{t:"Care activități pot conduce la apariția unei întreruperi?", multi:true,
- o:["Schimbarea nivelului logic al unui pin","Sfârșitul unei perioade de timp (timer)","Sfârșitul unei conversii Analog-Numerice","Doar apăsarea butonului de reset"], c:[0,1,2]},
-{t:"Câte niveluri de cuantizare are un ADC de 9 biți?", multi:false,
- o:["512","256","1024","128"], c:[0]},
-{t:"Ce reprezintă tabela vectorilor de întrerupere?", multi:true,
- o:["Legătura dintre întreruperi și rutina de tratare (ISR)","Un tabel cu informații despre întreruperi și adresele ISR-urilor","O zonă de memorie volatilă fără structură","Un registru de configurare a portului GPIO"], c:[0,1]},
-{t:"Care sunt parametrii unui semnal PWM?", multi:true,
- o:["Proporția 'on' din perioada totală (duty cycle)","Numărul de repetiții pe secundă (frecvența)","Durata totală a unui ciclu (perioada)","Tensiunea de referință a ADC-ului"], c:[0,1,2]},
-{t:"Prin ce metode se pot accesa modulele de tip timer?", multi:true,
- o:["Metoda interogării (citire directă, polling)","Metoda întreruperii","Doar prin DMA","Doar prin acces extern SPI"], c:[0,1]},
-{t:"Care dintre afirmațiile legate de protecția pinilor digitali sunt adevărate?", multi:true,
- o:["Utilizarea unor limitatoare de curent / circuite de protecție la scurtcircuit","Utilizarea de circuite de limitare a tensiunii la un nivel sigur","Utilizarea de diode de protecție la alimentare, care blochează curentul invers","Eliminarea oricărei protecții pentru a crește viteza pinului"], c:[0,1,2]},
-{t:"Care este importanța modulelor de tip timer?", multi:true,
- o:["Flexibilitate dată de numărul mare de configurații posibile","Menținerea eficienței procesorului prin operarea în fundal a timer-ului","Precizia în măsurarea sau generarea intervalelor de timp","Reduce numărul de pini necesari microcontrolerului"], c:[0,1,2]},
-{t:"Un timer se poate utiliza pentru:", multi:true,
- o:["Generarea de întreruperi regulate","Validarea timpului de achiziție a unui semnal analogic","Generarea de semnale periodice","Stocarea permanentă a datelor de configurare"], c:[0,1,2]},
-{t:"Care sunt secțiunile memoriei flash a microcontrolerului ATmega328P?", multi:true,
- o:["Program de aplicații","BootLoader","EEPROM","SRAM"], c:[0,1]},
-{t:"Unitatea Aritmetică și Logică (ALU) conține:", multi:true,
- o:["Registre generale","Registrul acumulator","Registre de stare","Tabela vectorilor de întrerupere"], c:[0,1,2]},
-{t:"Care sunt caracteristicile unui bootloader?", multi:true,
- o:["Așteaptă trimiterea programului utilizator și îl scrie în memoria flash","Permite modificarea sau actualizarea software-ului de sistem","Este un program care rulează la alimentarea microcontrolerului","Rulează doar după ce aplicația principală s-a terminat"], c:[0,1,2]},
-{t:"Se poate reseta un RTC (Real-Time Clock)?", multi:false,
- o:["Fals","Adevărat", "Doar dacă e extern", "Doar la fiecare 24h"], c:[0]},
-{t:"Care afirmații despre etapa de eșantionare sunt corecte?", multi:true,
- o:["Procesul de eșantionare măsoară semnalul analogic la intervale discrete","Eșantionarea se face printr-un circuit de eșantionare și menținere (sample & hold)","Se pot folosi metodele naturală și cu vârf plat","Eșantionarea elimină complet zgomotul din semnal"], c:[0,1,2]},
-{t:"Convertorul ADC Delta-Sigma are viteză mai mică de conversie deoarece implică supraeșantionare și filtrare digitală?", multi:false,
- o:["Adevărat","Fals","Doar la rezoluții mici","Doar fără filtru digital"], c:[0]},
-{t:"Care afirmații despre convertorul Flash ADC sunt corecte?", multi:true,
- o:["Rezoluție mică (de obicei 8 biți sau mai puțin)","Folosește un set de comparatoare care compară simultan semnalul cu toate valorile de referință","Este cel mai rapid tip de ADC","Necesită cea mai mică suprafață de siliciu dintre toate tipurile de ADC"], c:[0,1,2]},
-{t:"Care sunt caracteristicile unui releu?", multi:true,
- o:["Facilitează izolarea galvanică în circuitul în care este utilizat","Este utilizat pentru a închide sau deschide un circuit electric","Conține o zonă de comandă (curenți mici) și una de putere (curenți mari)","Funcționează doar în curent continuu de înaltă tensiune"], c:[0,1,2]},
-{t:"Care sunt resursele OPȚIONALE pe care le poate conține un microcontroler?", multi:true,
- o:["Convertor Analog-Digital","Memorie de date de tip EEPROM","Facilități de optimizare a consumului","O unitate centrală de procesare"], c:[0,1,2]},
-{t:"Care sunt caracteristicile unui circuit de tip Trigger-Schmitt?", multi:true,
- o:["Facilitează eliminarea fluctuațiilor tensiunii de intrare pe pin","Utilizează două praguri pentru evaluarea tensiunii de intrare","Generează semnal de clock pentru sistem","Convertește semnal analogic în digital pe 8 biți"], c:[0,1]},
-{t:"Cum se pot elimina oscilațiile nedorite la apăsarea/comutarea unui buton (debounce)?", multi:true,
- o:["Cu ajutorul unui filtru RC","Cu ajutorul unor filtre software","Crescând tensiunea de alimentare a butonului","Eliminând rezistorul de pull-up/pull-down"], c:[0,1]},
-{t:"Ce conține fiecare poziție din tabelul vectorilor de întrerupere?", multi:false,
- o:["Adresa de memorie care indică locația de start a ISR-ului asociat","Valoarea curentă a acumulatorului","Starea registrului de configurare a portului","Frecvența de clock a sistemului"], c:[0]},
-{t:"Care sunt caracteristicile memoriei EEPROM?", multi:true,
- o:["Nevolatilă","Reprogramabilă","Pot fi șterse locații individuale","Viteză foarte mare de scriere, comparabilă cu SRAM"], c:[0,1,2]},
-{t:"Un counter (numărător de evenimente) monitorizează semnale cu distribuție aleatoare în timp?", multi:false,
- o:["Adevărat","Fals","Doar dacă e configurat ca timer","Doar pentru semnale PWM"], c:[0]},
-{t:"Care sunt caracteristicile unui ciclu instrucțiune?", multi:true,
- o:["Este obținut de la circuitul oscilator","Este format din n pulsuri de ceas","Este independent de frecvența de clock","Este identic pentru toate arhitecturile, indiferent de tip"], c:[0,1]},
-{t:"Care sunt funcționalități de bază pentru un depanator (debugger) embedded?", multi:true,
- o:["Punct de întrerupere (breakpoint)","Execuție pas cu pas","Inspecția variabilelor și vizualizarea memoriei","Compilarea automată a codului sursă"], c:[0,1,2]},
-{t:"Despre Unitatea Centrală de Procesare (CPU) este adevărat că:", multi:true,
- o:["Monitorizează și controlează toate procesele din interiorul unui microcontroler","Este formată din două unități funcționale: UAL și UC","Se conectează cu exteriorul prin magistrale de date, adrese și control","Conține memoria flash de program în interiorul ei"], c:[0,1,2]},
-{t:"Sunt instrucțiunile de tip CISC mai rapide și eficiente decât cele de tip RISC?", multi:false,
- o:["Fals — depinde de context, nu e o regulă generală","Adevărat, întotdeauna","Doar pentru operații în virgulă mobilă","Doar pe arhitecturi pe 8 biți"], c:[0]},
-{t:"Despre metoda de citire a timer-elor prin interogare (polling) este adevărat că:", multi:true,
- o:["Avantajul e dat de utilizarea la maxim a acurateții timer-ului","Presupune citirea unor registre și așteptarea în bucle software a unor valori din registrele de stare","Este mai eficientă energetic decât metoda prin întrerupere","Nu necesită niciun fel de registru de stare"], c:[0,1]},
-{t:"Despre un timer folosit pentru generarea de PWM este adevărat că:", multi:true,
- o:["Generează un semnal digital cu o frecvență constantă","Generează un semnal cu factor de umplere (duty cycle) variabil","Este utilizat ca bază pentru module de conversie digital-analogice simple","Necesită obligatoriu o întrerupere externă pentru fiecare puls"], c:[0,1,2]},
-{t:"Ce caracterizează conceptul de metastabilitate?", multi:true,
- o:["Apare când semnalele de intrare sunt schimbate aproape simultan cu semnalele de ceas","Este o stare instabilă în care semnalele de intrare pot fi într-o zonă de tranziție între două stări logice","Pentru o perioadă scurtă, nu se cunoaște starea în care se află pinul","Apare doar la frecvențe de clock sub 1 MHz"], c:[0,1,2]},
-{t:"Lățimea de bandă a unui ADC se referă la intervalul de frecvențe pe care îl poate converti eficient, fără distorsiuni semnificative — este corect?", multi:false,
- o:["Adevărat","Fals","Doar pentru ADC Delta-Sigma","Doar pentru ADC Flash"], c:[0]},
-{t:"Despre un registru cu funcții multiple (alternate function) este adevărat că:", multi:true,
- o:["Când este configurat un bit al registrului, funcția de GPIO este anulată","Permite configurarea funcționalităților precum I2C, SPI","Funcția implicită este mereu I2C, indiferent de configurare","Nu poate influența direcția pinului (intrare/ieșire)"], c:[0,1]},
-{t:"Despre arhitectura ATmega328P este adevărat că:", multi:true,
- o:["Zonele de Boot Loader și de Aplicație sunt în memoria program","Este o arhitectură de tip Harvard","Memoria de date este de tip SRAM și EEPROM","Memoria program este de tip SRAM volatilă"], c:[0,1,2]},
-{t:"Rata de eșantionare definește numărul de eșantioane pe care ADC-ul le poate captura într-o anumită perioadă de timp — este corect?", multi:false,
- o:["Adevărat","Fals","Doar pentru ADC cu aproximații succesive","Doar la frecvențe peste 1 MHz"], c:[0]},
-{t:"Despre registrele de stare este adevărat că:", multi:true,
- o:["Pot controla aspecte specifice ale execuției unui program","Stochează informații legate de starea procesorului","Conțin indicatori precum zero, semn, paritate","Stochează exclusiv adresa următoarei instrucțiuni"], c:[0,1,2]},
-{t:"Despre fenomenul de aliasing la conversia A/D este adevărat că:", multi:true,
- o:["Prevenirea lui presupune creșterea ratei de eșantionare (minim dublul frecvenței maxime a semnalului)","O parte din frecvențele semnalului inițial sunt complet pierdute","Semnalul digital nu mai reprezintă corect semnalul analogic inițial","Apare doar la ADC-uri cu rezoluție sub 8 biți"], c:[0,1,2]},
-{t:"Despre rutina de tratare a unei întreruperi (ISR) este adevărat că:", multi:true,
- o:["Are o execuție automată, declanșată de eveniment","Are capacitatea de a salva și restaura contextul CPU","Are posibilitatea de a fi prioritizată","Rulează mereu cu prioritate mai mică decât bucla principală"], c:[0,1,2]},
-{t:"Cum se poate modifica frecvența unui semnal PWM?", multi:true,
- o:["Schimbarea valorii de prescalare","Modificarea frecvenței ceasului de sistem","Schimbarea valorii maxime la care contorul timer-ului ajunge înainte de reset","Schimbarea tensiunii de referință a ADC-ului"], c:[0,1,2]},
-{t:"Despre regiștrii cu funcții speciale este adevărat că:", multi:true,
- o:["Biții de control operează direct pe hardware","Sunt conectați la circuite interne specifice: timer, ADC, oscilator","Fiecare bit este asignat unei funcții de control sau de stare","Sunt disponibili exclusiv în citire (read-only)"], c:[0,1,2]},
-{t:"Ce trebuie să conțină fiecare pin al unui port dintr-un microcontroller?", multi:true,
- o:["O linie de activare","Un buffer de intrare","Un buffer de ieșire","Un convertor A/D dedicat"], c:[0,1,2]},
-{t:"Un Real-Time Clock (RTC) este disponibil doar ca cip extern microcontrolerului — este corect?", multi:false,
- o:["Fals — poate fi și integrat în microcontroler","Adevărat","Doar pe arhitecturi de 8 biți","Doar dacă nu există baterie de backup"], c:[0]},
-{t:"Etapa de codificare și stocare implică codificarea valorilor cuantizate într-o formă digitală, pentru a putea fi procesate sau stocate — este corect?", multi:false,
- o:["Adevărat","Fals","Doar pentru ADC Flash","Doar pentru ADC Delta-Sigma"], c:[0]},
-{t:"Reținerea (hold) este procesul prin care valoarea unui eșantion este menținută constantă pe durata necesară conversiei — este corect?", multi:false,
- o:["Adevărat","Fals","Doar la ADC-uri lente","Doar la ADC-uri cu rezoluție peste 12 biți"], c:[0]},
-{t:"Care elemente influențează timpul de conversie al unui ADC?", multi:true,
- o:["Frecvența de tact a ADC-ului","Tipul de ADC","Numărul de biți de rezoluție al ADC-ului","Tensiunea de alimentare a microcontrolerului"], c:[0,1,2]},
-{t:"Care afirmații despre eroarea de cuantizare sunt adevărate?", multi:true,
- o:["Apare pentru că un ADC convertește un semnal continuu într-un semnal discret cu număr finit de trepte","Diferența dintre valoarea analogică reală și cea digitală convertită reprezintă eroarea de cuantizare","Poate fi eliminată complet prin creșterea tensiunii de referință","Nu depinde în niciun fel de numărul de biți al ADC-ului"], c:[0,1]},
-{t:"Care este ordinea corectă a etapelor pentru programarea unui MC folosind limbajul C?", multi:false,
- o:["Scriere cod sursă → Compilare → Legare (linking) → Programare MC → Execuție", "Compilare → Scriere cod sursă → Execuție → Legare → Programare MC", "Programare MC → Scriere cod sursă → Compilare → Legare → Execuție", "Legare → Compilare → Scriere cod sursă → Programare MC → Execuție"], c:[0]},
-{t:"În etapa de citire de la Slave, la comunicația I2C, care este ordinea corectă a pașilor?", multi:false,
- o:["Master trimite adresa+R/W=0 → Slave ACK → Master trimite adresa+R/W=1 → Slave ACK → Slave transmite datele","Slave trimite adresa → Master ACK → Slave transmite datele direct","Master trimite direct R/W=1 → Slave transmite datele, fără ACK","Slave inițiază comunicația trimițând STOP"], c:[0]},
-{t:"Care este alcătuirea unui comparator folosit într-un ADC?", multi:false,
- o:["Două intrări analogice și o ieșire digitală","O intrare digitală și două ieșiri analogice","Doar o intrare și o ieșire, ambele digitale","Trei intrări analogice și o ieșire analogică"], c:[0]},
-];
-
-const QUIZ_LEN = 25;
-
-function shuffle(arr, seedFn){
-  const a = arr.slice();
-  for(let i=a.length-1;i>0;i--){
-    const j = Math.floor((seedFn?seedFn():Math.random())*(i+1));
-    [a[i],a[j]] = [a[j],a[i]];
-  }
-  return a;
-}
-
-// deterministic PRNG so both players get the exact same shuffled set from one seed
-function mulberry32(seed){
-  return function(){
-    seed |= 0; seed = seed + 0x6D2B79F5 | 0;
-    let t = Math.imul(seed ^ seed >>> 15, 1 | seed);
-    t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t;
-    return ((t ^ t >>> 14) >>> 0) / 4294967296;
-  };
-}
-
-function pickQuestions(seed){
-  const rnd = mulberry32(seed);
-  const picked = shuffle(BANK, rnd).slice(0, QUIZ_LEN);
-  return picked.map(q=>{
-    const optOrder = shuffle(q.o.map((_,i)=>i), rnd);
-    const newOpts = optOrder.map(i=>q.o[i]);
-    const newCorrect = optOrder.map((origIdx, newIdx)=> q.c.includes(origIdx) ? newIdx : null).filter(x=>x!==null);
-    return {t:q.t, multi:q.multi, o:newOpts, c:newCorrect};
-  });
-}
-
-/* ============== STATE ============== */
-let roomCode = null;
-let myRole = null; // 'p1' or 'p2'
-let myName = '';
-let myId = null;
-let questions = [];
-let qIndex = 0;
-let selected = new Set();
-let answered = false;
-let myAnswers = [];
-let myScore = 0;
-let roomRef = null;
-let roomListener = null;
-let lastRoomData = null;
-
-function show(id){
-  document.querySelectorAll('.card').forEach(c=>c.classList.add('hidden'));
-  document.getElementById(id).classList.remove('hidden');
-}
-function genCode(){
-  const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
-  let s = '';
-  for(let i=0;i<4;i++) s += chars[Math.floor(Math.random()*chars.length)];
-  return s;
-}
-function showErr(msg){
-  const el = document.getElementById('setupErr');
-  el.textContent = msg;
-  el.classList.remove('hidden');
-}
-function clearErr(){
-  document.getElementById('setupErr').classList.add('hidden');
-}
-
-/* connection status */
-db.ref('.info/connected').on('value', snap=>{
-  const el = document.getElementById('connStatus');
-  if(snap.val() === true){
-    el.className = 'conn ok';
-    el.innerHTML = '<div class="dot"></div><span>conectat</span>';
-  } else {
-    el.className = 'conn bad';
-    el.innerHTML = '<div class="dot"></div><span>deconectat</span>';
-  }
-});
-
-/* ============== TABS ============== */
-document.getElementById('tabCreate').addEventListener('click', ()=>{
-  document.getElementById('tabCreate').classList.add('active');
-  document.getElementById('tabJoin').classList.remove('active');
-  document.getElementById('paneCreate').classList.remove('hidden');
-  document.getElementById('paneJoin').classList.add('hidden');
-  clearErr();
-});
-document.getElementById('tabJoin').addEventListener('click', ()=>{
-  document.getElementById('tabJoin').classList.add('active');
-  document.getElementById('tabCreate').classList.remove('active');
-  document.getElementById('paneJoin').classList.remove('hidden');
-  document.getElementById('paneCreate').classList.add('hidden');
-  clearErr();
-});
-
-/* ============== CREATE ROOM ============== */
-document.getElementById('createBtn').addEventListener('click', async ()=>{
-  clearErr();
-  const name = document.getElementById('createName').value.trim();
-  if(!name){ showErr('Introdu-ți numele.'); return; }
-  myName = name; myRole = 'p1';
-
-  const code = genCode();
-  const seed = Math.floor(Math.random()*1e9);
-  roomCode = code;
-
-  try{
-    await db.ref('rooms/'+code).set({
-      seed: seed,
-      status: 'waiting',
-      createdAt: Date.now(),
-      players: {
-        p1: { name: myName, joined: true, progress: 0, score: 0, finished: false }
-      }
-    });
-    enterRoom(code, 'p1');
-  } catch(e){
-    showErr('Eroare la crearea camerei: ' + e.message);
-  }
-});
-
-/* ============== JOIN ROOM ============== */
-document.getElementById('joinBtn').addEventListener('click', async ()=>{
-  clearErr();
-  const name = document.getElementById('joinName').value.trim();
-  const code = document.getElementById('joinCode').value.trim().toUpperCase();
-  if(!name){ showErr('Introdu-ți numele.'); return; }
-  if(!code){ showErr('Introdu codul camerei.'); return; }
-
-  try{
-    const snap = await db.ref('rooms/'+code).get();
-    if(!snap.exists()){ showErr('Nu există nicio cameră cu acest cod.'); return; }
-    const data = snap.val();
-    if(data.players && data.players.p2 && data.players.p2.joined){
-      showErr('Camera este deja plină.'); return;
-    }
-    myName = name; myRole = 'p2'; roomCode = code;
-    await db.ref('rooms/'+code+'/players/p2').set({ name: myName, joined: true, progress: 0, score: 0, finished: false });
-    enterRoom(code, 'p2');
-  } catch(e){
-    showErr('Eroare la conectare: ' + e.message);
-  }
-});
-
-/* ============== ROOM LOGIC ============== */
-function enterRoom(code, role){
-  roomCode = code; myRole = role;
-  roomRef = db.ref('rooms/'+code);
-  document.getElementById('roomCodeDisplay').textContent = code;
-  show('screen-wait');
-
-  if(roomListener) roomRef.off('value', roomListener);
-  roomListener = roomRef.on('value', snap=>{
-    const data = snap.val();
-    if(!data) return;
-    lastRoomData = data;
-    handleRoomUpdate(data);
-  });
-}
-
-function handleRoomUpdate(data){
-  const players = data.players || {};
-  const bothJoined = players.p1 && players.p1.joined && players.p2 && players.p2.joined;
-
-  // --- waiting room rendering ---
-  if(!document.getElementById('screen-wait').classList.contains('hidden') ||
-     document.getElementById('screen-setup').classList.contains('hidden') && data.status === 'waiting'){
-    renderWaitlist(players);
-  }
-
-  if(data.status === 'waiting' && bothJoined && questions.length === 0){
-    // generate question set once both joined (host already has seed)
-    questions = pickQuestions(data.seed);
-    if(myRole === 'p1'){
-      db.ref('rooms/'+roomCode+'/status').set('ready');
-    }
-  }
-  if (
-  data.status === 'ready' &&
-  document.getElementById('screen-results').classList.contains('hidden') === false
-) {
-  questions = [];
-  qIndex = 0;
-  myAnswers = [];
-  myScore = 0;
-
-  questions = pickQuestions(data.seed);
-  startQuiz();
-  return;
-}
-  if(data.status === 'ready' || data.status === 'playing'){
-    if(questions.length === 0) questions = pickQuestions(data.seed);
-    if(document.getElementById('screen-wait').classList.contains('hidden') === false){
-      // still on wait screen -> auto start
-      startQuiz();
-    }
-  }
-
-  // update opponent progress while I'm in quiz
-  if(!document.getElementById('screen-quiz').classList.contains('hidden')){
-    updateOpponentProgress(players);
-  }
-
-  // check if both finished -> show results
-  if(players.p1 && players.p2 && players.p1.finished && players.p2.finished){
-    if(!document.getElementById('screen-results').classList.contains('hidden')) return;
-    if(!document.getElementById('screen-review').classList.contains('hidden')) return;
-    showResults(data);
-  } else {
-    // if I'm finished but waiting for opponent
-    const me = players[myRole];
-    if(me && me.finished && !document.getElementById('screen-waitresult').classList.contains('hidden') === false){
-      // already handled at finish time
-    }
-  }
-}
-
-function renderWaitlist(players){
-  const wl = document.getElementById('waitlist');
-  wl.innerHTML = '';
-  ['p1','p2'].forEach(role=>{
-    const p = players[role];
-    const row = document.createElement('div');
-    row.className = 'waitrow' + (p && p.joined ? ' joined' : '');
-    row.innerHTML = `<div class="dot2"></div><div class="nm">${p && p.joined ? p.name : (role==='p1'?'Gazdă':'Jucător 2')}</div><div class="st">${p && p.joined ? 'conectat' : 'în așteptare...'}</div>`;
-    wl.appendChild(row);
-  });
-  const bothJoined = players.p1 && players.p1.joined && players.p2 && players.p2.joined;
-  document.getElementById('waitNote').textContent = bothJoined ? 'Amândoi sunteți conectați — pornim duelul...' : 'Se așteaptă al doilea jucător...';
-}
-
-function startQuiz(){
-  qIndex = 0;
-  myAnswers = [];
-  myScore = 0;
-  renderQuestion();
-  show('screen-quiz');
-}
-
-function updateOpponentProgress(players){
-  const oppRole = myRole === 'p1' ? 'p2' : 'p1';
-  const opp = players[oppRole];
-  const el = document.getElementById('oppoProgress');
-  if(opp){
-    el.textContent = `${opp.name || 'Adversar'}: ${opp.progress || 0}/${QUIZ_LEN}` + (opp.finished ? ' — a terminat' : '');
-  }
-}
-
-function renderQuestion(){
-  selected = new Set();
-  answered = false;
-  const q = questions[qIndex];
-
-  document.getElementById('quizPlayerName').textContent = myName;
-  document.getElementById('quizCounter').textContent = `${qIndex+1} / ${QUIZ_LEN}`;
-  document.getElementById('progressFill').style.width = `${(qIndex/QUIZ_LEN)*100}%`;
-  document.getElementById('qTypeBadge').textContent = q.multi ? "SELECTARE MULTIPLĂ" : "SELECTARE SIMPLĂ";
-  document.getElementById('qText').textContent = q.t;
-
-  const list = document.getElementById('optsList');
-  list.innerHTML = '';
-  q.o.forEach((optText, idx)=>{
-    const div = document.createElement('div');
-    div.className = 'opt';
-    div.innerHTML = `<div class="mark">✓</div><div>${optText}</div>`;
-    div.addEventListener('click', ()=>{
-      if(answered) return;
-      if(q.multi){
-        if(selected.has(idx)) selected.delete(idx); else selected.add(idx);
-      } else {
-        selected = new Set([idx]);
-      }
-      syncSelectionUI();
-    });
-    list.appendChild(div);
-  });
-  syncSelectionUI();
-  document.getElementById('feedbackBox').classList.add('hidden');
-  const btn = document.getElementById('submitBtn');
-  btn.textContent = "Confirmă răspunsul";
-  btn.disabled = true;
-  btn.onclick = handleSubmit;
-
-  if(lastRoomData && lastRoomData.players) updateOpponentProgress(lastRoomData.players);
-}
-
-function syncSelectionUI(){
-  const opts = document.querySelectorAll('#optsList .opt');
-  opts.forEach((el, idx)=> el.classList.toggle('selected', selected.has(idx)));
-  document.getElementById('submitBtn').disabled = selected.size === 0;
-}
-function setsEqual(a,b){
-  if(a.size !== b.size) return false;
-  for(const x of a) if(!b.has(x)) return false;
-  return true;
-}
-
-function handleSubmit(){
-  if(answered) return;
-  answered = true;
-  const q = questions[qIndex];
-  const correctSet = new Set(q.c);
-  const isCorrect = setsEqual(selected, correctSet);
-
-  const opts = document.querySelectorAll('#optsList .opt');
-  opts.forEach((el, idx)=>{
-    el.classList.add('disabled');
-    if(correctSet.has(idx)) el.classList.add('correct');
-    else if(selected.has(idx)) el.classList.add('incorrect');
-  });
-
-  const fb = document.getElementById('feedbackBox');
-  fb.classList.remove('hidden');
-  if(isCorrect){ fb.className='feedback ok'; fb.textContent='✓ Corect.'; }
-  else { fb.className='feedback bad'; fb.textContent='✗ Greșit. Răspunsul corect este marcat mai sus.'; }
-
-  myAnswers.push({qIndex, selected: Array.from(selected), correct: isCorrect});
-  if(isCorrect) myScore++;
-
-  db.ref(`rooms/${roomCode}/players/${myRole}`).update({ progress: qIndex+1, score: myScore });
-
-  const btn = document.getElementById('submitBtn');
-  btn.textContent = (qIndex === QUIZ_LEN-1) ? "Trimite rezultatul →" : "Întrebarea următoare →";
-  btn.disabled = false;
-  btn.onclick = nextStep;
-}
-
-function nextStep(){
-  if(qIndex < QUIZ_LEN - 1){
-    qIndex++;
-    renderQuestion();
-  } else {
-    finishMyQuiz();
-  }
-}
-
-async function finishMyQuiz(){
-  document.getElementById('myFinalScore').textContent = myScore;
-  show('screen-waitresult');
-
-  // Actualizăm doar jucătorul curent, fără a suprascrie camera cu cache-ul local învechit
-  await db.ref(`rooms/${roomCode}/players/${myRole}`).update({
-    finished: true, 
-    score: myScore, 
-    progress: QUIZ_LEN, 
-    answers: myAnswers
-  });
-}
-
-
-/* ============== RESULTS ============== */
-function showResults(data){
-  const players = data.players;
-  const p1 = players.p1, p2 = players.p2;
-  document.getElementById('resP1Name').textContent = p1.name;
-  document.getElementById('resP2Name').textContent = p2.name;
-  document.getElementById('resP1Score').textContent = p1.score;
-  document.getElementById('resP2Score').textContent = p2.score;
-
-  const banner = document.getElementById('winnerBanner');
-  if(p1.score === p2.score){
-    banner.className = 'winner-banner tie';
-    banner.textContent = `Egalitate perfectă — ${p1.score}/${QUIZ_LEN} fiecare. Revanșă?`;
-  } else if(p1.score > p2.score){
-    banner.className = 'winner-banner p1';
-    banner.textContent = `🏆 ${p1.name} câștigă duelul, ${p1.score}–${p2.score}.`;
-  } else {
-    banner.className = 'winner-banner p2';
-    banner.textContent = `🏆 ${p2.name} câștigă duelul, ${p2.score}–${p1.score}.`;
-  }
-
-  const bc = document.getElementById('barCompare');
-  bc.innerHTML = '';
-  [[p1.name, p1.score, 'p1'], [p2.name, p2.score, 'p2']].forEach(([lbl,val,cls])=>{
-    const row = document.createElement('div');
-    row.className = `barrow ${cls}`;
-    row.innerHTML = `<div class="label">${lbl}</div><div class="track"><div class="fill" style="width:0%"></div></div><div class="val">${val}</div>`;
-    bc.appendChild(row);
-    requestAnimationFrame(()=>{ row.querySelector('.fill').style.width = `${(val/QUIZ_LEN)*100}%`; });
-  });
-
-  window._reviewData = { p1, p2, questions };
-  show('screen-results');
-}
-
-document.getElementById('rematchBtn').addEventListener('click', async () => {
-  if (myRole !== 'p1') {
-    alert('Doar gazda poate porni revanșa.');
-    return;
-  }
-
-  const newSeed = Math.floor(Math.random() * 1e9);
-
-  await db.ref(`rooms/${roomCode}`).set({
-    seed: newSeed,
-    status: 'ready',
-    createdAt: Date.now(),
-    players: {
-      p1: {
-        name: lastRoomData.players.p1.name,
-        joined: true,
-        progress: 0,
-        score: 0,
-        finished: false,
-        answers: null
+    /* ============== QUESTION BANK ============== */
+    const BANK = [
+      {
+        t: "Ce este metastabilitatea?", multi: false,
+        o: ["Imposibilitatea sistemului de a se stabili într-un nivel logic 0/1", "O stare de scurtcircuit între VCC și GND", "Procesul de cuantizare a unui semnal analogic", "O eroare de paritate la transmisia UART"], c: [0]
       },
-      p2: {
-        name: lastRoomData.players.p2.name,
-        joined: true,
-        progress: 0,
-        score: 0,
-        finished: false,
-        answers: null
+      {
+        t: "Un circuit latch cu o mărime de intrare nedefinită poate furniza la ieșire:", multi: true,
+        o: ["Low", "High", "Nedefinit", "Doar valoarea 0 logic"], c: [0, 1, 2]
+      },
+      {
+        t: "Care sunt tipurile de erori care pot apărea la o conversie analog-numerică?", multi: true,
+        o: ["Eroarea de offset", "Eroarea de cuantizare", "Erori de amplificare", "Erori de transmisie UART"], c: [0, 1, 2]
+      },
+      {
+        t: "Care dintre următoarele este specifică Unității Aritmetice și Logice (ALU)?", multi: true,
+        o: ["Realizarea operațiilor matematice și logice", "Facilitarea transferului de date între registre și exteriorul CPU", "Generarea semnalului de clock al sistemului", "Stocarea permanentă a programului"], c: [0, 1]
+      },
+      {
+        t: "Împărțirea unui interval în subintervale măsurabile se realizează pe parcursul procesului de:", multi: false,
+        o: ["Eșantionare", "Cuantizare", "Codificare", "Reținere"], c: [1]
+      },
+      {
+        t: "Ce este necesar pentru sincronizarea Emițătorului cu Receptorul la comunicația UART?", multi: true,
+        o: ["Receptorul realizează supraeșantionarea mesajului primit", "Utilizarea unui registru cu deplasare și un buffer", "Un semnal de clock comun, transmis pe o linie separată", "Sincronizare prin handshake hardware obligatoriu"], c: [0, 1]
+      },
+      {
+        t: "Ce bit se folosește pentru depistarea erorilor în UART?", multi: false,
+        o: ["Bitul de start", "Bitul de paritate", "Bitul de stop", "Bitul de control"], c: [1]
+      },
+      {
+        t: "Cum se pot conecta dispozitive slave SPI?", multi: true,
+        o: ["Printr-o legătură înlănțuită, dacă nu e necesar transferul slave-master", "Prin utilizarea unei linii SS pentru fiecare dispozitiv", "Folosind circuite decodificatoare", "Doar printr-o singură linie SDA comună"], c: [0, 1, 2]
+      },
+      {
+        t: "Cum se realizează legătura dintre întreruperea propriu-zisă și ISR?", multi: false,
+        o: ["Cu ajutorul vectorului de întrerupere", "Prin polling continuu al registrului de stare", "Prin acumulator", "Prin magistrala de adrese"], c: [0]
+      },
+      {
+        t: "Care este rolul circuitului oscilator?", multi: false,
+        o: ["Generează semnale de clock", "Amplifică semnalul analogic de intrare", "Stochează datele temporar", "Filtrează zgomotul de pe linia de alimentare"], c: [0]
+      },
+      {
+        t: "Cum este adresat dispozitivul slave de către master în comunicația SPI?", multi: false,
+        o: ["Prin setarea liniei SS pe nivel low", "Prin trimiterea unei adrese pe MOSI", "Prin front crescător pe SCK", "Prin linia MISO"], c: [0]
+      },
+      {
+        t: "Care este numărul de biți definiți de producător pentru mesajele de adresare UART?", multi: false,
+        o: ["Între 2 și 4", "Între 5 și 9", "Exact 8", "Între 10 și 16"], c: [1]
+      },
+      {
+        t: "Care sunt modalitățile de implementare a unui ADC?", multi: true,
+        o: ["Cu buclă de reacție", "Fără buclă de reacție", "Doar cu interfață I2C", "Doar prin software"], c: [0, 1]
+      },
+      {
+        t: "Care dintre afirmațiile despre rata de transfer UART sunt adevărate?", multi: true,
+        o: ["Nu poate fi generată orice rată de transfer", "Prescalarul trebuie să fie număr întreg", "Provine de la clock-ul sistemului", "Este mereu identică indiferent de prescalare"], c: [0, 1, 2]
+      },
+      {
+        t: "Care sunt caracteristicile USART?", multi: true,
+        o: ["Introducerea unui clock comun pentru Emițător și Receptor", "Creșterea vitezei de transfer cu factorul de supraeșantionare", "Funcționează exclusiv asincron", "Nu necesită bit de start/stop"], c: [0, 1]
+      },
+      {
+        t: "Care dintre următoarele componente aparțin ALU?", multi: true,
+        o: ["Registre pentru memorare locală", "Circuite pentru transferul de date între registre și exterior", "Circuite combinaționale și logice", "Memoria Flash de program"], c: [0, 1, 2]
+      },
+      {
+        t: "Care dintre caracteristicile unei întreruperi sunt corecte?", multi: true,
+        o: ["Sistemul poate acționa real-time la un stimul extern", "Sistemul de întreruperi poate fi activat/dezactivat", "Întreruperile pot avea priorități diferite", "Toate întreruperile au mereu aceeași prioritate"], c: [0, 1, 2]
+      },
+      {
+        t: "Care este rolul unui rezistor de pull-up?", multi: true,
+        o: ["Conectează pinul de intrare la o tensiune predefinită, dacă nu e furnizată de HW extern", "Evită apariția unei stări de instabilitate la intrarea unui pin folosit cu buton", "Amplifică semnalul digital de ieșire", "Reduce consumul de curent al microcontrolerului"], c: [0, 1]
+      },
+      {
+        t: "Interfața I2C este o interfață de tipul:", multi: false,
+        o: ["Sincronă, master-slave, half-duplex", "Asincronă, point-to-point, full-duplex", "Sincronă, full-duplex, fără adresare", "Asincronă, broadcast-only"], c: [0]
+      },
+      {
+        t: "Care este numărul de biți definiți de producător pentru mesajele de adresare I2C?", multi: false,
+        o: ["4", "7", "8", "16"], c: [0]
+      },
+      {
+        t: "Condiția de STOP pentru transmiterea datelor pe I2C presupune:", multi: true,
+        o: ["Semnalul SCL pe high", "Semnalul SDA pe front crescător (low→high)", "Semnalul SCL pe low", "Semnalul SDA pe front descrescător"], c: [0, 1]
+      },
+      {
+        t: "Alegeți afirmațiile corecte despre interfețele de comunicație:", multi: true,
+        o: ["Interfețele sincrone prezintă risc mai mic de erori de sincronizare între E și R", "La interfața asincronă e necesar să se știe de la început rata de transfer", "Interfețele sincrone nu necesită niciun semnal de clock", "Interfețele asincrone sunt mereu mai rapide decât cele sincrone"], c: [0, 1]
+      },
+      {
+        t: "Care sunt modurile de adresare pentru comunicația I2C?", multi: false,
+        o: ["Pe 7 și 10 biți", "Doar pe 8 biți", "Pe 4 și 6 biți", "Pe 16 și 32 biți"], c: [0]
+      },
+      {
+        t: "Care este rolul unui circuit de eșantionare-reținere (sample & hold, cu R, C și buffer înainte de ADC)?", multi: false,
+        o: ["Prevenirea deteriorării rezultatului conversiei în etapa de eșantionare", "Amplificarea semnalului de intrare", "Generarea tensiunii de referință", "Filtrarea armonicilor de înaltă frecvență"], c: [0]
+      },
+      {
+        t: "Care sunt caracteristicile adevărate despre tensiunea de referință?", multi: true,
+        o: ["Este utilizată în procesul de conversie", "Poate fi generată în circuit", "Poate fi furnizată din exterior", "Trebuie să fie mereu egală cu VCC"], c: [0, 1, 2]
+      },
+      {
+        t: "Ce caracteristici trebuie să aibă planul de testare?", multi: true,
+        o: ["Să îndeplinească toate cerințele din caietul de sarcini", "Să verifice funcționarea în scenarii accidentale", "Să satisfacă criterii de performanță într-un mediu real", "Să fie scris doar după finalizarea produsului"], c: [0, 1, 2]
+      },
+      {
+        t: "Care sunt liniile de comunicație pentru I2C?", multi: false,
+        o: ["SCL și SDA", "MOSI și MISO", "TX și RX", "SS și SCK"], c: [0]
+      },
+      {
+        t: "Care dintre următoarele reprezintă un parametru de configurare al unei rețele UART?", multi: true,
+        o: ["Bitul de paritate", "Bitul de stop", "Rata de transfer", "Numărul de biți de date"], c: [0, 1, 2, 3]
+      },
+      {
+        t: "Care afirmații despre comunicația serială sunt corecte?", multi: true,
+        o: ["O interfață half-duplex permite transferul doar de la un nod la un moment dat", "O interfață full-duplex permite transferul pe ambele părți simultan", "Interfața paralelă permite transferul pe mai multe linii de date, de obicei 4 sau 8", "Interfața serială transmite mai mulți biți simultan pe linii separate"], c: [0, 1, 2]
+      },
+      {
+        t: "Ce presupune confirmarea primirii datelor pe I2C?", multi: true,
+        o: ["Receptorul trimite ACK după fiecare 8 biți primiți", "ACK presupune trecerea SDA în starea low", "ACK presupune trecerea SCL în starea low", "Confirmarea se face doar la finalul întregii transmisii"], c: [0, 1]
+      },
+      {
+        t: "Ce este rezoluția unui ADC?", multi: false,
+        o: ["Reprezintă numărul de stări de ieșire posibile", "Reprezintă viteza maximă de conversie", "Reprezintă tensiunea de referință folosită", "Reprezintă timpul de eșantionare"], c: [0]
+      },
+      {
+        t: "La ce fel de comparații poate fi utilizat un comparator?", multi: true,
+        o: ["Compararea unui semnal cu o mărime de referință", "Compararea a două semnale între ele", "Doar compararea unui semnal cu masa (GND)", "Doar compararea în domeniul digital"], c: [0, 1]
+      },
+      {
+        t: "Magistrala de adrese:", multi: true,
+        o: ["Este unidirecțională", "Transmite doar semnale de ieșire din microprocesor", "Este bidirecțională, ca și magistrala de date", "Transportă semnale de control de citire/scriere"], c: [0, 1]
+      },
+      {
+        t: "6 biți de date, 1 bit de start, paritate impară, 2 biți de stop — cum se prescurtează configurația?", multi: false,
+        o: ["602", "612", "6O2", "6E2"], c: [2]
+      },
+      {
+        t: "Care sunt modurile de transmisie ale I2C?", multi: true,
+        o: ["Standard", "Rapid", "Extra rapid", "Turbo"], c: [0, 1, 2]
+      },
+      {
+        t: "Ce duce la pierderea sincronizării în UART?", multi: false,
+        o: ["Divergența ratei de transfer dintre Emițător și Receptor", "Lipsa bitului de paritate", "O tensiune de alimentare prea mare", "Folosirea unui prescaler par"], c: [0]
+      },
+      {
+        t: "Care sunt caracteristicile arhitecturii VON NEUMANN?", multi: true,
+        o: ["Memorie comună pentru date și instrucțiuni", "Execuția unei instrucțiuni în mai multe etape", "O singură magistrală de date și instrucțiuni", "Memorii separate pentru program și date"], c: [0, 1, 2]
+      },
+      {
+        t: "Care registre sunt importante pentru configurarea unui PORT de intrare/ieșire?", multi: true,
+        o: ["Registrul de setare a direcției datelor (DDR)", "Registrul corespunzător portului (PORT/PIN)", "Registrul acumulator", "Registrul de stare al ALU"], c: [0, 1]
+      },
+      {
+        t: "Cum se accesează memoria unui microcontroler?", multi: false,
+        o: ["La nivelul unui grup de biți numiți celule/locații de memorie, cu adresă unică", "Doar bit cu bit, secvențial", "Exclusiv prin DMA", "Prin magistrala SPI internă"], c: [0]
+      },
+      {
+        t: "Memoria de tip flash este o memorie de tip:", multi: false,
+        o: ["Hibridă (nevolatilă, dar reprogramabilă electric)", "Pur volatilă", "Doar pentru citire (ROM clasică)", "Analogică"], c: [0]
+      },
+      {
+        t: "Standardul RS-232 este responsabil pentru:", multi: false,
+        o: ["Mecanismul de transfer al datelor din punct de vedere al specificațiilor electrice", "Protocolul logic I2C", "Algoritmul de criptare a datelor seriale", "Topologia rețelelor CAN"], c: [0]
+      },
+      {
+        t: "Frecvența de intrare maximă procesată de un ADC trebuie să fie mai mică decât:", multi: false,
+        o: ["Jumătate din frecvența de eșantionare (1/2·fs)", "Dublul frecvenței de eșantionare", "Frecvența tensiunii de referință", "Frecvența de clock a CPU"], c: [0]
+      },
+      {
+        t: "Din ce este format un rezonator de cuarț?", multi: false,
+        o: ["Condensatoare și un cristal de cuarț (circuit oscilator)", "Doar o bobină", "Un rezistor variabil și o diodă", "Un tranzistor și un condensator electrolitic"], c: [0]
+      },
+      {
+        t: "Cum se poate implementa un modul de PWM?", multi: false,
+        o: ["Utilizând incrementarea și/sau decrementarea unui contor (timer)", "Doar printr-un convertor digital-analogic extern", "Prin filtrare RC pasivă a unui semnal analogic", "Prin eșantionare Delta-Sigma"], c: [0]
+      },
+      {
+        t: "Care este etapa următoare, după ce controlul a fost transferat către ISR, la apariția unei întreruperi?", multi: false,
+        o: ["Se încarcă adresa de început a ISR", "Se revine direct din întrerupere", "Se dezactivează definitiv sistemul de întreruperi", "Se șterge conținutul acumulatorului"], c: [0]
+      },
+      {
+        t: "Care sunt caracteristicile arhitecturii Harvard?", multi: true,
+        o: ["Are implementat un mecanism de tip pipeline", "Permite execuția unei instrucțiuni într-un singur ciclu de clock", "Folosește o singură magistrală comună pentru program și date", "Memorie comună pentru date și instrucțiuni"], c: [0, 1]
+      },
+      {
+        t: "Care sunt caracteristicile UART?", multi: true,
+        o: ["Utilizează 2 linii: receptor și emițător; în repaus linia este high", "Cel mai nesemnificativ bit (LSB) este transmis primul", "Este folosit pentru comunicații sincrone", "Necesită un clock comun explicit între E și R"], c: [0, 1]
+      },
+      {
+        t: "Care dintre următoarele caracterizează un watchdog timer?", multi: true,
+        o: ["Este resetat de microcontroler dacă zona de program a fost executată în intervalul alocat", "Resetează programul dacă apare o funcționare incorectă", "Generează semnal PWM pentru motor", "Funcționează doar atunci când CPU este oprit"], c: [0, 1]
+      },
+      {
+        t: "Care caracteristici ale circuitului de prescalare sunt adevărate?", multi: true,
+        o: ["Se recomandă utilizarea celei mai mici valori de prescalare pentru acuratețe maximă", "Împarte un semnal de ceas la anumite valori", "Mărește frecvența semnalului de ceas", "Este folosit exclusiv în comunicația I2C"], c: [0, 1]
+      },
+      {
+        t: "Ce presupune ACK în cadrul comunicației I2C?", multi: false,
+        o: ["Trecerea liniei SDA în starea low", "Trecerea liniei SCL în starea high", "Trimiterea unui octet special de confirmare", "Resetarea barei I2C"], c: [0]
+      },
+      {
+        t: "Care este direcția transmiterii pe I2C în funcție de bitul R/W?", multi: true,
+        o: ["R/W = LOW: masterul trimite date la slave", "R/W = HIGH: masterul citește date de la slave", "R/W = LOW: masterul citește date de la slave", "R/W = HIGH: slave-ul trimite clock-ul"], c: [0, 1]
+      },
+      {
+        t: "Care resurse trebuie să le conțină OBLIGATORIU un microcontroler?", multi: true,
+        o: ["Un sistem de întreruperi", "O unitate centrală de procesare", "Intrări/ieșiri numerice", "Un modul ADC integrat"], c: [0, 1, 2]
+      },
+      {
+        t: "Care este cauza apariției erorilor de tip overrun în UART?", multi: false,
+        o: ["Datele din registrul buffer nu au fost citite în totalitate înainte de a sosi date noi", "Linia TX este lăsată în starea low prea mult timp", "Tensiunea de alimentare este prea mică", "Bitul de paritate lipsește din configurație"], c: [0]
+      },
+      {
+        t: "Care este starea liniilor SDA și SCL în repaus (idle) pe I2C?", multi: false,
+        o: ["HIGH", "LOW", "Alternanță high/low", "Indiferentă (floating)"], c: [0]
+      },
+      {
+        t: "Ce este memoria, în contextul unui microcontroler?", multi: false,
+        o: ["Componenta utilizată pentru stocarea de date și/sau program", "Doar circuitul care generează clock-ul", "Un registru de stare al ALU", "Magistrala de control"], c: [0]
+      },
+      {
+        t: "Care dintre proprietățile comunicației SPI sunt adevărate?", multi: true,
+        o: ["Sincronizarea se poate face pe ambele fronturi ale clock-ului", "Este sincronă, de tip punct la punct", "Necesită rezistor de pull-up obligatoriu pe SCK", "Este întotdeauna half-duplex"], c: [0, 1]
+      },
+      {
+        t: "Care este formula ratei de transfer (Rt) la UART?", multi: false,
+        o: ["Rt = f / (S · contor)", "Rt = f · S · contor", "Rt = S / (f · contor)", "Rt = contor / (f · S)"], c: [0]
+      },
+      {
+        t: "Ce este un optocuplor?", multi: false,
+        o: ["Un circuit care permite izolarea galvanică față de alte componente dintr-o schemă electrică", "Un tip de rezistor variabil cu lumină", "Un convertor analog-digital optic", "Un tip de memorie EEPROM"], c: [0]
+      },
+      {
+        t: "Care afirmații despre comunicația serială sunt corecte?", multi: true,
+        o: ["Interfața serială trimite datele secvențial, bit cu bit", "Interfețele sincrone folosesc pentru receptor un clock sincronizat cu cel al emițătorului", "Interfețele asincrone conțin 2 semnale de clock nesincronizate, transmise explicit", "Interfața serială transmite mereu toți biții simultan"], c: [0, 1]
+      },
+      {
+        t: "Care circuite intră în componența unui sincronizator (pentru semnale asincrone la intrarea unui sistem digital)?", multi: true,
+        o: ["Circuit de tip latch", "Circuit de tip Trigger Schmitt", "Convertor digital-analogic", "Registru de deplasare cu 8 biți"], c: [0, 1]
+      },
+      {
+        t: "Care dintre următoarele reprezintă linii de comunicație SPI?", multi: true,
+        o: ["SS", "SCK", "MISO", "RX"], c: [0, 1, 2]
+      },
+      {
+        t: "Sistemul de întreruperi poate fi prioritizat utilizând:", multi: true,
+        o: ["Un sistem de prioritizare software", "Un tabel al priorităților", "Doar ordinea fizică a pinilor", "Frecvența de clock a CPU"], c: [0, 1]
+      },
+      {
+        t: "Ce rol are registrul acumulator?", multi: true,
+        o: ["Stochează date până când anumite operații vor fi efectuate", "Este folosit ca registru de stare (flags)", "Conține mereu adresa următoarei instrucțiuni", "Generează semnalul de clock al sistemului"], c: [0]
+      },
+      {
+        t: "Care sunt sursele care pot activa o întrerupere?", multi: true,
+        o: ["Un timer", "Un ADC", "Un modul periferic (ex: UART, SPI)", "Doar resetul microcontrolerului"], c: [0, 1, 2]
+      },
+      {
+        t: "Este adevărat că un Timer monitorizează semnale care au o distribuție aleatoare în timp?", multi: false,
+        o: ["Fals — pentru asta se folosește un counter, nu un timer", "Adevărat", "Doar dacă e configurat ca PWM", "Doar în modul CTC"], c: [0]
+      },
+      {
+        t: "Ce trebuie să conțină documentația unui proiect?", multi: true,
+        o: ["Planul de testare", "Diagramele bloc", "Descrierea sistemului și codul sursă", "Doar codul sursă, fără altă documentație"], c: [0, 1, 2]
+      },
+      {
+        t: "Care este diferența dintre USART și UART?", multi: false,
+        o: ["USART conține un modul de sincronizare și poate funcționa și sincron, spre deosebire de UART care e doar asincron", "UART transmite mai rapid decât USART", "USART nu folosește bit de paritate", "UART necesită un clock comun extern obligatoriu"], c: [0]
+      },
+      {
+        t: "Conversia numărului binar 11011 în zecimal este:", multi: false,
+        o: ["27", "26", "25", "29"], c: [0]
+      },
+      {
+        t: "Un convertor analog-numeric cu aproximații succesive folosește o buclă de reglare (feedback)?", multi: false,
+        o: ["Adevărat", "Fals", "Doar la rezoluții peste 12 biți", "Doar pentru semnale audio"], c: [0]
+      },
+      {
+        t: "Care sunt caracteristicile memoriei SRAM?", multi: true,
+        o: ["Operare la viteze mari", "Volatilă", "Reprogramabilă (scriere/citire directă)", "Nevolatilă, păstrează datele fără alimentare"], c: [0, 1, 2]
+      },
+      {
+        t: "Care sunt caracteristicile unui timer simplu?", multi: true,
+        o: ["Numără un interval de timp bazat pe ceasul intern al microcontrolerului", "Își incrementează valoarea la fiecare ciclu de ceas", "Poate avea moduri Normal sau CTC", "Numărarea se poate face doar crescător (up)"], c: [0, 1, 2]
+      },
+      {
+        t: "Care activități pot conduce la apariția unei întreruperi?", multi: true,
+        o: ["Schimbarea nivelului logic al unui pin", "Sfârșitul unei perioade de timp (timer)", "Sfârșitul unei conversii Analog-Numerice", "Doar apăsarea butonului de reset"], c: [0, 1, 2]
+      },
+      {
+        t: "Câte niveluri de cuantizare are un ADC de 9 biți?", multi: false,
+        o: ["512", "256", "1024", "128"], c: [0]
+      },
+      {
+        t: "Ce reprezintă tabela vectorilor de întrerupere?", multi: true,
+        o: ["Legătura dintre întreruperi și rutina de tratare (ISR)", "Un tabel cu informații despre întreruperi și adresele ISR-urilor", "O zonă de memorie volatilă fără structură", "Un registru de configurare a portului GPIO"], c: [0, 1]
+      },
+      {
+        t: "Care sunt parametrii unui semnal PWM?", multi: true,
+        o: ["Proporția 'on' din perioada totală (duty cycle)", "Numărul de repetiții pe secundă (frecvența)", "Durata totală a unui ciclu (perioada)", "Tensiunea de referință a ADC-ului"], c: [0, 1, 2]
+      },
+      {
+        t: "Prin ce metode se pot accesa modulele de tip timer?", multi: true,
+        o: ["Metoda interogării (citire directă, polling)", "Metoda întreruperii", "Doar prin DMA", "Doar prin acces extern SPI"], c: [0, 1]
+      },
+      {
+        t: "Care dintre afirmațiile legate de protecția pinilor digitali sunt adevărate?", multi: true,
+        o: ["Utilizarea unor limitatoare de curent / circuite de protecție la scurtcircuit", "Utilizarea de circuite de limitare a tensiunii la un nivel sigur", "Utilizarea de diode de protecție la alimentare, care blochează curentul invers", "Eliminarea oricărei protecții pentru a crește viteza pinului"], c: [0, 1, 2]
+      },
+      {
+        t: "Care este importanța modulelor de tip timer?", multi: true,
+        o: ["Flexibilitate dată de numărul mare de configurații posibile", "Menținerea eficienței procesorului prin operarea în fundal a timer-ului", "Precizia în măsurarea sau generarea intervalelor de timp", "Reduce numărul de pini necesari microcontrolerului"], c: [0, 1, 2]
+      },
+      {
+        t: "Un timer se poate utiliza pentru:", multi: true,
+        o: ["Generarea de întreruperi regulate", "Validarea timpului de achiziție a unui semnal analogic", "Generarea de semnale periodice", "Stocarea permanentă a datelor de configurare"], c: [0, 1, 2]
+      },
+      {
+        t: "Care sunt secțiunile memoriei flash a microcontrolerului ATmega328P?", multi: true,
+        o: ["Program de aplicații", "BootLoader", "EEPROM", "SRAM"], c: [0, 1]
+      },
+      {
+        t: "Unitatea Aritmetică și Logică (ALU) conține:", multi: true,
+        o: ["Registre generale", "Registrul acumulator", "Registre de stare", "Tabela vectorilor de întrerupere"], c: [0, 1, 2]
+      },
+      {
+        t: "Care sunt caracteristicile unui bootloader?", multi: true,
+        o: ["Așteaptă trimiterea programului utilizator și îl scrie în memoria flash", "Permite modificarea sau actualizarea software-ului de sistem", "Este un program care rulează la alimentarea microcontrolerului", "Rulează doar după ce aplicația principală s-a terminat"], c: [0, 1, 2]
+      },
+      {
+        t: "Se poate reseta un RTC (Real-Time Clock)?", multi: false,
+        o: ["Fals", "Adevărat", "Doar dacă e extern", "Doar la fiecare 24h"], c: [0]
+      },
+      {
+        t: "Care afirmații despre etapa de eșantionare sunt corecte?", multi: true,
+        o: ["Procesul de eșantionare măsoară semnalul analogic la intervale discrete", "Eșantionarea se face printr-un circuit de eșantionare și menținere (sample & hold)", "Se pot folosi metodele naturală și cu vârf plat", "Eșantionarea elimină complet zgomotul din semnal"], c: [0, 1, 2]
+      },
+      {
+        t: "Convertorul ADC Delta-Sigma are viteză mai mică de conversie deoarece implică supraeșantionare și filtrare digitală?", multi: false,
+        o: ["Adevărat", "Fals", "Doar la rezoluții mici", "Doar fără filtru digital"], c: [0]
+      },
+      {
+        t: "Care afirmații despre convertorul Flash ADC sunt corecte?", multi: true,
+        o: ["Rezoluție mică (de obicei 8 biți sau mai puțin)", "Folosește un set de comparatoare care compară simultan semnalul cu toate valorile de referință", "Este cel mai rapid tip de ADC", "Necesită cea mai mică suprafață de siliciu dintre toate tipurile de ADC"], c: [0, 1, 2]
+      },
+      {
+        t: "Care sunt caracteristicile unui releu?", multi: true,
+        o: ["Facilitează izolarea galvanică în circuitul în care este utilizat", "Este utilizat pentru a închide sau deschide un circuit electric", "Conține o zonă de comandă (curenți mici) și una de putere (curenți mari)", "Funcționează doar în curent continuu de înaltă tensiune"], c: [0, 1, 2]
+      },
+      {
+        t: "Care sunt resursele OPȚIONALE pe care le poate conține un microcontroler?", multi: true,
+        o: ["Convertor Analog-Digital", "Memorie de date de tip EEPROM", "Facilități de optimizare a consumului", "O unitate centrală de procesare"], c: [0, 1, 2]
+      },
+      {
+        t: "Care sunt caracteristicile unui circuit de tip Trigger-Schmitt?", multi: true,
+        o: ["Facilitează eliminarea fluctuațiilor tensiunii de intrare pe pin", "Utilizează două praguri pentru evaluarea tensiunii de intrare", "Generează semnal de clock pentru sistem", "Convertește semnal analogic în digital pe 8 biți"], c: [0, 1]
+      },
+      {
+        t: "Cum se pot elimina oscilațiile nedorite la apăsarea/comutarea unui buton (debounce)?", multi: true,
+        o: ["Cu ajutorul unui filtru RC", "Cu ajutorul unor filtre software", "Crescând tensiunea de alimentare a butonului", "Eliminând rezistorul de pull-up/pull-down"], c: [0, 1]
+      },
+      {
+        t: "Ce conține fiecare poziție din tabelul vectorilor de întrerupere?", multi: false,
+        o: ["Adresa de memorie care indică locația de start a ISR-ului asociat", "Valoarea curentă a acumulatorului", "Starea registrului de configurare a portului", "Frecvența de clock a sistemului"], c: [0]
+      },
+      {
+        t: "Care sunt caracteristicile memoriei EEPROM?", multi: true,
+        o: ["Nevolatilă", "Reprogramabilă", "Pot fi șterse locații individuale", "Viteză foarte mare de scriere, comparabilă cu SRAM"], c: [0, 1, 2]
+      },
+      {
+        t: "Un counter (numărător de evenimente) monitorizează semnale cu distribuție aleatoare în timp?", multi: false,
+        o: ["Adevărat", "Fals", "Doar dacă e configurat ca timer", "Doar pentru semnale PWM"], c: [0]
+      },
+      {
+        t: "Care sunt caracteristicile unui ciclu instrucțiune?", multi: true,
+        o: ["Este obținut de la circuitul oscilator", "Este format din n pulsuri de ceas", "Este independent de frecvența de clock", "Este identic pentru toate arhitecturile, indiferent de tip"], c: [0, 1]
+      },
+      {
+        t: "Care sunt funcționalități de bază pentru un depanator (debugger) embedded?", multi: true,
+        o: ["Punct de întrerupere (breakpoint)", "Execuție pas cu pas", "Inspecția variabilelor și vizualizarea memoriei", "Compilarea automată a codului sursă"], c: [0, 1, 2]
+      },
+      {
+        t: "Despre Unitatea Centrală de Procesare (CPU) este adevărat că:", multi: true,
+        o: ["Monitorizează și controlează toate procesele din interiorul unui microcontroler", "Este formată din două unități funcționale: UAL și UC", "Se conectează cu exteriorul prin magistrale de date, adrese și control", "Conține memoria flash de program în interiorul ei"], c: [0, 1, 2]
+      },
+      {
+        t: "Sunt instrucțiunile de tip CISC mai rapide și eficiente decât cele de tip RISC?", multi: false,
+        o: ["Fals — depinde de context, nu e o regulă generală", "Adevărat, întotdeauna", "Doar pentru operații în virgulă mobilă", "Doar pe arhitecturi pe 8 biți"], c: [0]
+      },
+      {
+        t: "Despre metoda de citire a timer-elor prin interogare (polling) este adevărat că:", multi: true,
+        o: ["Avantajul e dat de utilizarea la maxim a acurateții timer-ului", "Presupune citirea unor registre și așteptarea în bucle software a unor valori din registrele de stare", "Este mai eficientă energetic decât metoda prin întrerupere", "Nu necesită niciun fel de registru de stare"], c: [0, 1]
+      },
+      {
+        t: "Despre un timer folosit pentru generarea de PWM este adevărat că:", multi: true,
+        o: ["Generează un semnal digital cu o frecvență constantă", "Generează un semnal cu factor de umplere (duty cycle) variabil", "Este utilizat ca bază pentru module de conversie digital-analogice simple", "Necesită obligatoriu o întrerupere externă pentru fiecare puls"], c: [0, 1, 2]
+      },
+      {
+        t: "Ce caracterizează conceptul de metastabilitate?", multi: true,
+        o: ["Apare când semnalele de intrare sunt schimbate aproape simultan cu semnalele de ceas", "Este o stare instabilă în care semnalele de intrare pot fi într-o zonă de tranziție între două stări logice", "Pentru o perioadă scurtă, nu se cunoaște starea în care se află pinul", "Apare doar la frecvențe de clock sub 1 MHz"], c: [0, 1, 2]
+      },
+      {
+        t: "Lățimea de bandă a unui ADC se referă la intervalul de frecvențe pe care îl poate converti eficient, fără distorsiuni semnificative — este corect?", multi: false,
+        o: ["Adevărat", "Fals", "Doar pentru ADC Delta-Sigma", "Doar pentru ADC Flash"], c: [0]
+      },
+      {
+        t: "Despre un registru cu funcții multiple (alternate function) este adevărat că:", multi: true,
+        o: ["Când este configurat un bit al registrului, funcția de GPIO este anulată", "Permite configurarea funcționalităților precum I2C, SPI", "Funcția implicită este mereu I2C, indiferent de configurare", "Nu poate influența direcția pinului (intrare/ieșire)"], c: [0, 1]
+      },
+      {
+        t: "Despre arhitectura ATmega328P este adevărat că:", multi: true,
+        o: ["Zonele de Boot Loader și de Aplicație sunt în memoria program", "Este o arhitectură de tip Harvard", "Memoria de date este de tip SRAM și EEPROM", "Memoria program este de tip SRAM volatilă"], c: [0, 1, 2]
+      },
+      {
+        t: "Rata de eșantionare definește numărul de eșantioane pe care ADC-ul le poate captura într-o anumită perioadă de timp — este corect?", multi: false,
+        o: ["Adevărat", "Fals", "Doar pentru ADC cu aproximații succesive", "Doar la frecvențe peste 1 MHz"], c: [0]
+      },
+      {
+        t: "Despre registrele de stare este adevărat că:", multi: true,
+        o: ["Pot controla aspecte specifice ale execuției unui program", "Stochează informații legate de starea procesorului", "Conțin indicatori precum zero, semn, paritate", "Stochează exclusiv adresa următoarei instrucțiuni"], c: [0, 1, 2]
+      },
+      {
+        t: "Despre fenomenul de aliasing la conversia A/D este adevărat că:", multi: true,
+        o: ["Prevenirea lui presupune creșterea ratei de eșantionare (minim dublul frecvenței maxime a semnalului)", "O parte din frecvențele semnalului inițial sunt complet pierdute", "Semnalul digital nu mai reprezintă corect semnalul analogic inițial", "Apare doar la ADC-uri cu rezoluție sub 8 biți"], c: [0, 1, 2]
+      },
+      {
+        t: "Despre rutina de tratare a unei întreruperi (ISR) este adevărat că:", multi: true,
+        o: ["Are o execuție automată, declanșată de eveniment", "Are capacitatea de a salva și restaura contextul CPU", "Are posibilitatea de a fi prioritizată", "Rulează mereu cu prioritate mai mică decât bucla principală"], c: [0, 1, 2]
+      },
+      {
+        t: "Cum se poate modifica frecvența unui semnal PWM?", multi: true,
+        o: ["Schimbarea valorii de prescalare", "Modificarea frecvenței ceasului de sistem", "Schimbarea valorii maxime la care contorul timer-ului ajunge înainte de reset", "Schimbarea tensiunii de referință a ADC-ului"], c: [0, 1, 2]
+      },
+      {
+        t: "Despre regiștrii cu funcții speciale este adevărat că:", multi: true,
+        o: ["Biții de control operează direct pe hardware", "Sunt conectați la circuite interne specifice: timer, ADC, oscilator", "Fiecare bit este asignat unei funcții de control sau de stare", "Sunt disponibili exclusiv în citire (read-only)"], c: [0, 1, 2]
+      },
+      {
+        t: "Ce trebuie să conțină fiecare pin al unui port dintr-un microcontroller?", multi: true,
+        o: ["O linie de activare", "Un buffer de intrare", "Un buffer de ieșire", "Un convertor A/D dedicat"], c: [0, 1, 2]
+      },
+      {
+        t: "Un Real-Time Clock (RTC) este disponibil doar ca cip extern microcontrolerului — este corect?", multi: false,
+        o: ["Fals — poate fi și integrat în microcontroler", "Adevărat", "Doar pe arhitecturi de 8 biți", "Doar dacă nu există baterie de backup"], c: [0]
+      },
+      {
+        t: "Etapa de codificare și stocare implică codificarea valorilor cuantizate într-o formă digitală, pentru a putea fi procesate sau stocate — este corect?", multi: false,
+        o: ["Adevărat", "Fals", "Doar pentru ADC Flash", "Doar pentru ADC Delta-Sigma"], c: [0]
+      },
+      {
+        t: "Reținerea (hold) este procesul prin care valoarea unui eșantion este menținută constantă pe durata necesară conversiei — este corect?", multi: false,
+        o: ["Adevărat", "Fals", "Doar la ADC-uri lente", "Doar la ADC-uri cu rezoluție peste 12 biți"], c: [0]
+      },
+      {
+        t: "Care elemente influențează timpul de conversie al unui ADC?", multi: true,
+        o: ["Frecvența de tact a ADC-ului", "Tipul de ADC", "Numărul de biți de rezoluție al ADC-ului", "Tensiunea de alimentare a microcontrolerului"], c: [0, 1, 2]
+      },
+      {
+        t: "Care afirmații despre eroarea de cuantizare sunt adevărate?", multi: true,
+        o: ["Apare pentru că un ADC convertește un semnal continuu într-un semnal discret cu număr finit de trepte", "Diferența dintre valoarea analogică reală și cea digitală convertită reprezintă eroarea de cuantizare", "Poate fi eliminată complet prin creșterea tensiunii de referință", "Nu depinde în niciun fel de numărul de biți al ADC-ului"], c: [0, 1]
+      },
+      {
+        t: "Care este ordinea corectă a etapelor pentru programarea unui MC folosind limbajul C?", multi: false,
+        o: ["Scriere cod sursă → Compilare → Legare (linking) → Programare MC → Execuție", "Compilare → Scriere cod sursă → Execuție → Legare → Programare MC", "Programare MC → Scriere cod sursă → Compilare → Legare → Execuție", "Legare → Compilare → Scriere cod sursă → Programare MC → Execuție"], c: [0]
+      },
+      {
+        t: "În etapa de citire de la Slave, la comunicația I2C, care este ordinea corectă a pașilor?", multi: false,
+        o: ["Master trimite adresa+R/W=0 → Slave ACK → Master trimite adresa+R/W=1 → Slave ACK → Slave transmite datele", "Slave trimite adresa → Master ACK → Slave transmite datele direct", "Master trimite direct R/W=1 → Slave transmite datele, fără ACK", "Slave inițiază comunicația trimițând STOP"], c: [0]
+      },
+      {
+        t: "Care este alcătuirea unui comparator folosit într-un ADC?", multi: false,
+        o: ["Două intrări analogice și o ieșire digitală", "O intrare digitală și două ieșiri analogice", "Doar o intrare și o ieșire, ambele digitale", "Trei intrări analogice și o ieșire analogică"], c: [0]
+      },
+      {
+        type: "order",
+        t: "Ordonează etapele producerii unei întreruperi",
+        o: [
+          "Programul execută instrucțiuni în bucla principală de program (MPF)",
+          "Apare o întrerupere: PC este salvat în stivă: push(PC)",
+          "În PC este salvată adresa 1 din ISR (din tabela vectorilor de întrerupere)",
+          "Funcția de tratare a întreruperii este executată",
+          "În PC este adusă valoarea instrucţiunii următoare: pop(PC) + 1"
+        ],
+        c: [0, 1, 2, 3, 4]
+      },
+    ];
+
+    const QUIZ_LEN = 25;
+
+    function shuffle(arr, seedFn) {
+      const a = arr.slice();
+      for (let i = a.length - 1; i > 0; i--) {
+        const j = Math.floor((seedFn ? seedFn() : Math.random()) * (i + 1));
+        [a[i], a[j]] = [a[j], a[i]];
+      }
+      return a;
+    }
+
+    // deterministic PRNG so both players get the exact same shuffled set from one seed
+    function mulberry32(seed) {
+      return function () {
+        seed |= 0; seed = seed + 0x6D2B79F5 | 0;
+        let t = Math.imul(seed ^ seed >>> 15, 1 | seed);
+        t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t;
+        return ((t ^ t >>> 14) >>> 0) / 4294967296;
+      };
+    }
+
+    function pickQuestions(seed) {
+      const rnd = mulberry32(seed);
+      const picked = shuffle(BANK, rnd).slice(0, QUIZ_LEN);
+      return picked.map(q => {
+        const optOrder = shuffle(q.o.map((_, i) => i), rnd);
+        const newOpts = optOrder.map(i => q.o[i]);
+        const newCorrect = q.type === 'order'
+          ? q.c
+          : optOrder.map((origIdx, newIdx) => q.c.includes(origIdx) ? newIdx : null).filter(x => x !== null);
+
+        return { type: q.type, t: q.t, multi: q.multi, o: newOpts, c: newCorrect, origO: q.o };
+      });
+    }
+
+    /* ============== STATE ============== */
+    let roomCode = null;
+    let myRole = null; // 'p1' or 'p2'
+    let myName = '';
+    let myId = null;
+    let questions = [];
+    let qIndex = 0;
+    let selected = new Set();
+    let answered = false;
+    let myAnswers = [];
+    let myScore = 0;
+    let roomRef = null;
+    let roomListener = null;
+    let lastRoomData = null;
+
+    function show(id) {
+      document.querySelectorAll('.card').forEach(c => c.classList.add('hidden'));
+      document.getElementById(id).classList.remove('hidden');
+    }
+    function genCode() {
+      const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+      let s = '';
+      for (let i = 0; i < 4; i++) s += chars[Math.floor(Math.random() * chars.length)];
+      return s;
+    }
+    function showErr(msg) {
+      const el = document.getElementById('setupErr');
+      el.textContent = msg;
+      el.classList.remove('hidden');
+    }
+    function clearErr() {
+      document.getElementById('setupErr').classList.add('hidden');
+    }
+
+    /* connection status */
+    db.ref('.info/connected').on('value', snap => {
+      const el = document.getElementById('connStatus');
+      if (snap.val() === true) {
+        el.className = 'conn ok';
+        el.innerHTML = '<div class="dot"></div><span>conectat</span>';
+      } else {
+        el.className = 'conn bad';
+        el.innerHTML = '<div class="dot"></div><span>deconectat</span>';
+      }
+    });
+
+    /* ============== TABS ============== */
+    document.getElementById('tabCreate').addEventListener('click', () => {
+      document.getElementById('tabCreate').classList.add('active');
+      document.getElementById('tabJoin').classList.remove('active');
+      document.getElementById('paneCreate').classList.remove('hidden');
+      document.getElementById('paneJoin').classList.add('hidden');
+      clearErr();
+    });
+    document.getElementById('tabJoin').addEventListener('click', () => {
+      document.getElementById('tabJoin').classList.add('active');
+      document.getElementById('tabCreate').classList.remove('active');
+      document.getElementById('paneJoin').classList.remove('hidden');
+      document.getElementById('paneCreate').classList.add('hidden');
+      clearErr();
+    });
+
+    /* ============== CREATE ROOM ============== */
+    document.getElementById('createBtn').addEventListener('click', async () => {
+      clearErr();
+      const name = document.getElementById('createName').value.trim();
+      if (!name) { showErr('Introdu-ți numele.'); return; }
+      myName = name; myRole = 'p1';
+
+      const code = genCode();
+      const seed = Math.floor(Math.random() * 1e9);
+      roomCode = code;
+
+      try {
+        await db.ref('rooms/' + code).set({
+          seed: seed,
+          status: 'waiting',
+          createdAt: Date.now(),
+          players: {
+            p1: { name: myName, joined: true, progress: 0, score: 0, finished: false }
+          }
+        });
+        enterRoom(code, 'p1');
+      } catch (e) {
+        showErr('Eroare la crearea camerei: ' + e.message);
+      }
+    });
+
+    /* ============== JOIN ROOM ============== */
+    document.getElementById('joinBtn').addEventListener('click', async () => {
+      clearErr();
+      const name = document.getElementById('joinName').value.trim();
+      const code = document.getElementById('joinCode').value.trim().toUpperCase();
+      if (!name) { showErr('Introdu-ți numele.'); return; }
+      if (!code) { showErr('Introdu codul camerei.'); return; }
+
+      try {
+        const snap = await db.ref('rooms/' + code).get();
+        if (!snap.exists()) { showErr('Nu există nicio cameră cu acest cod.'); return; }
+        const data = snap.val();
+        if (data.players && data.players.p2 && data.players.p2.joined) {
+          showErr('Camera este deja plină.'); return;
+        }
+        myName = name; myRole = 'p2'; roomCode = code;
+        await db.ref('rooms/' + code + '/players/p2').set({ name: myName, joined: true, progress: 0, score: 0, finished: false });
+        enterRoom(code, 'p2');
+      } catch (e) {
+        showErr('Eroare la conectare: ' + e.message);
+      }
+    });
+
+    /* ============== ROOM LOGIC ============== */
+    function enterRoom(code, role) {
+      roomCode = code; myRole = role;
+      roomRef = db.ref('rooms/' + code);
+      document.getElementById('roomCodeDisplay').textContent = code;
+      show('screen-wait');
+
+      if (roomListener) roomRef.off('value', roomListener);
+      roomListener = roomRef.on('value', snap => {
+        const data = snap.val();
+        if (!data) return;
+        lastRoomData = data;
+        handleRoomUpdate(data);
+      });
+    }
+
+    function handleRoomUpdate(data) {
+      const players = data.players || {};
+      const bothJoined = players.p1 && players.p1.joined && players.p2 && players.p2.joined;
+
+      // --- waiting room rendering ---
+      if (!document.getElementById('screen-wait').classList.contains('hidden') ||
+        document.getElementById('screen-setup').classList.contains('hidden') && data.status === 'waiting') {
+        renderWaitlist(players);
+      }
+
+      if (data.status === 'waiting' && bothJoined && questions.length === 0) {
+        // generate question set once both joined (host already has seed)
+        questions = pickQuestions(data.seed);
+        if (myRole === 'p1') {
+          db.ref('rooms/' + roomCode + '/status').set('ready');
+        }
+      }
+      if (
+        data.status === 'ready' &&
+        document.getElementById('screen-results').classList.contains('hidden') === false
+      ) {
+        questions = [];
+        qIndex = 0;
+        myAnswers = [];
+        myScore = 0;
+
+        questions = pickQuestions(data.seed);
+        startQuiz();
+        return;
+      }
+      if (data.status === 'ready' || data.status === 'playing') {
+        if (questions.length === 0) questions = pickQuestions(data.seed);
+        if (document.getElementById('screen-wait').classList.contains('hidden') === false) {
+          // still on wait screen -> auto start
+          startQuiz();
+        }
+      }
+
+      // update opponent progress while I'm in quiz
+      if (!document.getElementById('screen-quiz').classList.contains('hidden')) {
+        updateOpponentProgress(players);
+      }
+
+      // update opponent progress while I'm waiting
+      if (!document.getElementById('screen-waitresult').classList.contains('hidden')) {
+        const oppRole = myRole === 'p1' ? 'p2' : 'p1';
+        const opp = players[oppRole];
+
+        if (opp) {
+          document.getElementById('waitOpponentProgress').textContent =
+            `${opp.progress || 0}/${QUIZ_LEN}`;
+        }
+      }
+
+      // check if both finished -> show results
+      if (players.p1 && players.p2 && players.p1.finished && players.p2.finished) {
+        if (!document.getElementById('screen-results').classList.contains('hidden')) return;
+        if (!document.getElementById('screen-review').classList.contains('hidden')) return;
+        showResults(data);
+      } else {
+        // if I'm finished but waiting for opponent
+        const me = players[myRole];
+        if (me && me.finished && !document.getElementById('screen-waitresult').classList.contains('hidden') === false) {
+          // already handled at finish time
+        }
       }
     }
-  });
 
-  // reset local
-  questions = [];
-  qIndex = 0;
-  myAnswers = [];
-  myScore = 0;
-  selected = new Set();
-  answered = false;
+    function renderWaitlist(players) {
+      const wl = document.getElementById('waitlist');
+      wl.innerHTML = '';
+      ['p1', 'p2'].forEach(role => {
+        const p = players[role];
+        const row = document.createElement('div');
+        row.className = 'waitrow' + (p && p.joined ? ' joined' : '');
+        row.innerHTML = `<div class="dot2"></div><div class="nm">${p && p.joined ? p.name : (role === 'p1' ? 'Gazdă' : 'Jucător 2')}</div><div class="st">${p && p.joined ? 'conectat' : 'în așteptare...'}</div>`;
+        wl.appendChild(row);
+      });
+      const bothJoined = players.p1 && players.p1.joined && players.p2 && players.p2.joined;
+      document.getElementById('waitNote').textContent = bothJoined ? 'Amândoi sunteți conectați — pornim duelul...' : 'Se așteaptă al doilea jucător...';
+    }
 
-  questions = pickQuestions(newSeed);
+    function startQuiz() {
+      qIndex = 0;
+      myAnswers = [];
+      myScore = 0;
+      renderQuestion();
+      show('screen-quiz');
+    }
 
-  startQuiz();
-});
+    function renderOrderQuestion(q) {
+      const answersEl = document.getElementById('optsList');
+      let order = [...q.o];
 
-document.getElementById('reviewBtn').addEventListener('click', renderReview);
-document.getElementById('backToResults').addEventListener('click', ()=> show('screen-results'));
+      function redraw() {
+        answersEl.innerHTML = '';
+        order.forEach((text, idx) => {
+          const div = document.createElement('div');
+          div.className = 'opt';
+          div.style.display = 'flex';
+          div.style.alignItems = 'center';
 
-function renderReview(){
-  const { p1, p2, questions: qs } = window._reviewData || {};
-  const list = document.getElementById('reviewList');
-  list.innerHTML = '';
-  if(!p1.answers || !p2.answers){
-    list.innerHTML = '<p style="color:var(--muted); font-family:var(--mono); font-size:13px;">Recapitularea nu este disponibilă pentru acest meci.</p>';
-    show('screen-review');
-    return;
-  }
-  let any = false;
-  for(let i=0;i<QUIZ_LEN;i++){
-    const a1 = p1.answers[i], a2 = p2.answers[i];
-    if(a1 && a2 && a1.correct && a2.correct) continue;
-    any = true;
-    const q = qs[i];
-    const block = document.createElement('div');
-    block.style.cssText = 'border:1px solid var(--line); border-radius:10px; padding:14px; margin-bottom:12px;';
-    let optsHtml = q.o.map((opt, idx)=>{
-      let tag = q.c.includes(idx) ? ' style="color:var(--p1);"' : '';
-      return `<div${tag} style="font-size:13px; margin:3px 0;">${q.c.includes(idx)?'✓ ':'· '}${opt}</div>`;
-    }).join('');
-    block.innerHTML = `
-      <div style="font-family:var(--mono); font-size:11px; color:var(--muted); margin-bottom:6px;">ÎNTREBAREA ${i+1}</div>
+          div.innerHTML = `
+        <div style="display:flex; flex-direction:column; gap:4px; margin-right:12px;">
+          <button type="button" class="up" style="background:var(--p1); color:#000; border:none; border-radius:4px; font-size:10px; cursor:pointer; padding:3px 6px;">▲</button>
+          <button type="button" class="down" style="background:var(--p1); color:#000; border:none; border-radius:4px; font-size:10px; cursor:pointer; padding:3px 6px;">▼</button>
+        </div>
+        <span>${idx + 1}. ${text}</span>
+      `;
+
+          div.querySelector('.up').onclick = (e) => {
+            e.stopPropagation();
+            if (idx === 0) return;
+            [order[idx], order[idx - 1]] = [order[idx - 1], order[idx]];
+            redraw();
+          };
+
+          div.querySelector('.down').onclick = (e) => {
+            e.stopPropagation();
+            if (idx === order.length - 1) return;
+            [order[idx], order[idx + 1]] = [order[idx + 1], order[idx]];
+            redraw();
+          };
+          answersEl.appendChild(div);
+        });
+        selected = order;
+        document.getElementById('submitBtn').disabled = false;
+      }
+      redraw();
+    }
+
+    function updateOpponentProgress(players) {
+      const oppRole = myRole === 'p1' ? 'p2' : 'p1';
+      const opp = players[oppRole];
+      const el = document.getElementById('oppoProgress');
+      if (opp) {
+        el.textContent = `${opp.name || 'Adversar'}: ${opp.progress || 0}/${QUIZ_LEN}` + (opp.finished ? ' — a terminat' : '');
+      }
+    }
+
+    function renderQuestion() {
+      selected = new Set();
+      answered = false;
+      const q = questions[qIndex];
+
+      document.getElementById('quizPlayerName').textContent = myName;
+      document.getElementById('quizCounter').textContent = `${qIndex + 1} / ${QUIZ_LEN}`;
+      document.getElementById('progressFill').style.width = `${(qIndex / QUIZ_LEN) * 100}%`;
+      document.getElementById('qText').textContent = q.t;
+
+      const list = document.getElementById('optsList');
+      list.innerHTML = '';
+
+      if (q.type === "order") {
+        renderOrderQuestion(q);
+      } else {
+        q.o.forEach((optText, idx) => {
+          const div = document.createElement('div');
+          div.className = 'opt';
+          div.innerHTML = `<div class="mark">✓</div><div>${optText}</div>`;
+          div.addEventListener('click', () => {
+            if (answered) return;
+            if (q.multi) {
+              if (selected.has(idx)) selected.delete(idx); else selected.add(idx);
+            } else {
+              selected = new Set([idx]);
+            }
+            syncSelectionUI();
+          });
+          list.appendChild(div);
+        });
+        syncSelectionUI();
+      }
+
+      document.getElementById('feedbackBox').classList.add('hidden');
+      const btn = document.getElementById('submitBtn');
+      btn.textContent = "Confirmă răspunsul";
+      btn.disabled = q.type !== "order";
+      btn.onclick = handleSubmit;
+
+      if (lastRoomData && lastRoomData.players) updateOpponentProgress(lastRoomData.players);
+    }
+
+    function syncSelectionUI() {
+      const opts = document.querySelectorAll('#optsList .opt');
+      opts.forEach((el, idx) => el.classList.toggle('selected', selected.has(idx)));
+      document.getElementById('submitBtn').disabled = selected.size === 0;
+    }
+    function setsEqual(a, b) {
+      if (a.size !== b.size) return false;
+      for (const x of a) if (!b.has(x)) return false;
+      return true;
+    }
+
+    function handleSubmit() {
+      if (answered) return;
+      answered = true;
+      const q = questions[qIndex];
+      let isCorrect = false;
+
+      if (q.type === "order") {
+        isCorrect = JSON.stringify(selected) === JSON.stringify(q.origO);
+        document.querySelectorAll('#optsList button').forEach(b => b.disabled = true);
+      } else {
+        const correctSet = new Set(q.c);
+        isCorrect = setsEqual(selected, correctSet);
+        const opts = document.querySelectorAll('#optsList .opt');
+        opts.forEach((el, idx) => {
+          el.classList.add('disabled');
+          if (correctSet.has(idx)) el.classList.add('correct');
+          else if (selected.has(idx)) el.classList.add('incorrect');
+        });
+      }
+
+      const fb = document.getElementById('feedbackBox');
+      fb.classList.remove('hidden');
+
+      if (isCorrect) {
+        fb.className = 'feedback ok';
+        fb.textContent = '✓ Corect.';
+      } else {
+        fb.className = 'feedback bad';
+        if (q.type === "order") {
+          fb.innerHTML = '✗ Ordine greșită.<br><br>Ordinea corectă era:<br>' + q.origO.map((x, i) => `${i + 1}. ${x}`).join('<br>');
+        } else {
+          fb.textContent = '✗ Greșit. Răspunsul corect este marcat mai sus.';
+        }
+      }
+
+      const answerData = q.type === 'order' ? selected : Array.from(selected);
+      myAnswers.push({ qIndex, selected: answerData, correct: isCorrect });
+
+      if (isCorrect) myScore++;
+
+      db.ref(`rooms/${roomCode}/players/${myRole}`).update({ progress: qIndex + 1, score: myScore });
+
+      const btn = document.getElementById('submitBtn');
+      btn.textContent = (qIndex === QUIZ_LEN - 1) ? "Trimite rezultatul →" : "Întrebarea următoare →";
+      btn.disabled = false;
+      btn.onclick = nextStep;
+    }
+
+    function nextStep() {
+      if (qIndex < QUIZ_LEN - 1) {
+        qIndex++;
+        renderQuestion();
+      } else {
+        finishMyQuiz();
+      }
+    }
+
+    async function finishMyQuiz() {
+      document.getElementById('myFinalScore').textContent = myScore;
+      show('screen-waitresult');
+
+      // Actualizăm doar jucătorul curent, fără a suprascrie camera cu cache-ul local învechit
+      await db.ref(`rooms/${roomCode}/players/${myRole}`).update({
+        finished: true,
+        score: myScore,
+        progress: QUIZ_LEN,
+        answers: myAnswers
+      });
+    }
+
+
+    /* ============== RESULTS ============== */
+    function showResults(data) {
+      const players = data.players;
+      const p1 = players.p1, p2 = players.p2;
+      document.getElementById('resP1Name').textContent = p1.name;
+      document.getElementById('resP2Name').textContent = p2.name;
+      document.getElementById('resP1Score').textContent = p1.score;
+      document.getElementById('resP2Score').textContent = p2.score;
+
+      const banner = document.getElementById('winnerBanner');
+      if (p1.score === p2.score) {
+        banner.className = 'winner-banner tie';
+        banner.textContent = `Egalitate perfectă — ${p1.score}/${QUIZ_LEN} fiecare. Revanșă?`;
+      } else if (p1.score > p2.score) {
+        banner.className = 'winner-banner p1';
+        banner.textContent = `🏆 ${p1.name} câștigă duelul, ${p1.score}–${p2.score}.`;
+      } else {
+        banner.className = 'winner-banner p2';
+        banner.textContent = `🏆 ${p2.name} câștigă duelul, ${p2.score}–${p1.score}.`;
+      }
+
+      const bc = document.getElementById('barCompare');
+      bc.innerHTML = '';
+      [[p1.name, p1.score, 'p1'], [p2.name, p2.score, 'p2']].forEach(([lbl, val, cls]) => {
+        const row = document.createElement('div');
+        row.className = `barrow ${cls}`;
+        row.innerHTML = `<div class="label">${lbl}</div><div class="track"><div class="fill" style="width:0%"></div></div><div class="val">${val}</div>`;
+        bc.appendChild(row);
+        requestAnimationFrame(() => { row.querySelector('.fill').style.width = `${(val / QUIZ_LEN) * 100}%`; });
+      });
+
+      window._reviewData = { p1, p2, questions };
+      show('screen-results');
+    }
+
+    document.getElementById('rematchBtn').addEventListener('click', async () => {
+      if (myRole !== 'p1') {
+        alert('Doar gazda poate porni revanșa.');
+        return;
+      }
+
+      const newSeed = Math.floor(Math.random() * 1e9);
+
+      await db.ref(`rooms/${roomCode}`).set({
+        seed: newSeed,
+        status: 'ready',
+        createdAt: Date.now(),
+        players: {
+          p1: {
+            name: lastRoomData.players.p1.name,
+            joined: true,
+            progress: 0,
+            score: 0,
+            finished: false,
+            answers: null
+          },
+          p2: {
+            name: lastRoomData.players.p2.name,
+            joined: true,
+            progress: 0,
+            score: 0,
+            finished: false,
+            answers: null
+          }
+        }
+      });
+
+      // reset local
+      questions = [];
+      qIndex = 0;
+      myAnswers = [];
+      myScore = 0;
+      selected = new Set();
+      answered = false;
+
+      questions = pickQuestions(newSeed);
+
+      startQuiz();
+    });
+
+    document.getElementById('reviewBtn').addEventListener('click', renderReview);
+    document.getElementById('backToResults').addEventListener('click', () => show('screen-results'));
+
+    function renderReview() {
+      const { p1, p2, questions: qs } = window._reviewData || {};
+      const list = document.getElementById('reviewList');
+      list.innerHTML = '';
+      if (!p1.answers || !p2.answers) {
+        list.innerHTML = '<p style="color:var(--muted); font-family:var(--mono); font-size:13px;">Recapitularea nu este disponibilă pentru acest meci.</p>';
+        show('screen-review');
+        return;
+      }
+      let any = false;
+      for (let i = 0; i < QUIZ_LEN; i++) {
+        const a1 = p1.answers[i], a2 = p2.answers[i];
+        if (a1 && a2 && a1.correct && a2.correct) continue;
+        any = true;
+        const q = qs[i];
+        const block = document.createElement('div');
+        block.style.cssText = 'border:1px solid var(--line); border-radius:10px; padding:14px; margin-bottom:12px;';
+        let optsHtml = '';
+        if (q.type === 'order') {
+          optsHtml = q.origO.map((opt, idx) => `<div style="font-size:13px; margin:3px 0; color:var(--p1);">${idx + 1}. ${opt}</div>`).join('');
+        } else {
+          optsHtml = q.o.map((opt, idx) => {
+            let tag = q.c.includes(idx) ? ' style="color:var(--p1);"' : '';
+            return `<div${tag} style="font-size:13px; margin:3px 0;">${q.c.includes(idx) ? '✓ ' : '· '}${opt}</div>`;
+          }).join('');
+        }
+        block.innerHTML = `
+      <div style="font-family:var(--mono); font-size:11px; color:var(--muted); margin-bottom:6px;">ÎNTREBAREA ${i + 1}</div>
       <div style="font-weight:600; margin-bottom:8px;">${q.t}</div>
       ${optsHtml}
       <div style="font-family:var(--mono); font-size:11px; margin-top:8px; color:var(--muted);">
         ${p1.name}: ${a1 && a1.correct ? '<span style="color:var(--p1)">corect</span>' : '<span style="color:var(--bad)">greșit</span>'} ·
         ${p2.name}: ${a2 && a2.correct ? '<span style="color:var(--p1)">corect</span>' : '<span style="color:var(--bad)">greșit</span>'}
       </div>`;
-    list.appendChild(block);
-  }
-  if(!any){
-    list.innerHTML = '<p style="color:var(--muted); font-family:var(--mono); font-size:13px;">Ambii jucători au răspuns corect la toate întrebările. Impresionant.</p>';
-  }
-  show('screen-review');
-}
-</script>
+        list.appendChild(block);
+      }
+      if (!any) {
+        list.innerHTML = '<p style="color:var(--muted); font-family:var(--mono); font-size:13px;">Ambii jucători au răspuns corect la toate întrebările. Impresionant.</p>';
+      }
+      show('screen-review');
+    }
+  </script>
 </body>
+
 </html>
