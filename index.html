@@ -367,7 +367,7 @@ const BANK = [
 {t:"Magistrala de adrese:", multi:true,
  o:["Este unidirecțională","Transmite doar semnale de ieșire din microprocesor","Este bidirecțională, ca și magistrala de date","Transportă semnale de control de citire/scriere"], c:[0,1]},
 {t:"6 biți de date, 1 bit de start, paritate impară, 2 biți de stop — cum se prescurtează configurația?", multi:false,
- o:["602","612","6O2","6E2"], c:[0]},
+ o:["602","612","6O2","6E2"], c:[2]},
 {t:"Care sunt modurile de transmisie ale I2C?", multi:true,
  o:["Standard","Rapid","Extra rapid","Turbo"], c:[0,1,2]},
 {t:"Ce duce la pierderea sincronizării în UART?", multi:false,
@@ -714,7 +714,19 @@ function handleRoomUpdate(data){
       db.ref('rooms/'+roomCode+'/status').set('ready');
     }
   }
+  if (
+  data.status === 'ready' &&
+  document.getElementById('screen-results').classList.contains('hidden') === false
+) {
+  questions = [];
+  qIndex = 0;
+  myAnswers = [];
+  myScore = 0;
 
+  questions = pickQuestions(data.seed);
+  startQuiz();
+  return;
+}
   if(data.status === 'ready' || data.status === 'playing'){
     if(questions.length === 0) questions = pickQuestions(data.seed);
     if(document.getElementById('screen-wait').classList.contains('hidden') === false){
@@ -910,20 +922,49 @@ function showResults(data){
   show('screen-results');
 }
 
-document.getElementById('rematchBtn').addEventListener('click', async ()=>{
-  if(myRole !== 'p1'){
-    alert('Doar gazda camerei poate porni o revanșă (din motive de sincronizare).');
+document.getElementById('rematchBtn').addEventListener('click', async () => {
+  if (myRole !== 'p1') {
+    alert('Doar gazda poate porni revanșa.');
     return;
   }
-  const newSeed = Math.floor(Math.random()*1e9);
-  await db.ref('rooms/'+roomCode).update({
+
+  const newSeed = Math.floor(Math.random() * 1e9);
+
+  await db.ref(`rooms/${roomCode}`).set({
     seed: newSeed,
-    status: 'waiting_rematch',
-    'players/p1/progress': 0, 'players/p1/score': 0, 'players/p1/finished': false, 'players/p1/answers': null,
-    'players/p2/progress': 0, 'players/p2/score': 0, 'players/p2/finished': false, 'players/p2/answers': null
+    status: 'ready',
+    createdAt: Date.now(),
+    players: {
+      p1: {
+        name: lastRoomData.players.p1.name,
+        joined: true,
+        progress: 0,
+        score: 0,
+        finished: false,
+        answers: null
+      },
+      p2: {
+        name: lastRoomData.players.p2.name,
+        joined: true,
+        progress: 0,
+        score: 0,
+        finished: false,
+        answers: null
+      }
+    }
   });
+
+  // reset local
+  questions = [];
+  qIndex = 0;
+  myAnswers = [];
+  myScore = 0;
+  selected = new Set();
+  answered = false;
+
   questions = pickQuestions(newSeed);
-  await db.ref('rooms/'+roomCode+'/status').set('ready');
+
+  startQuiz();
 });
 
 document.getElementById('reviewBtn').addEventListener('click', renderReview);
