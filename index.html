@@ -717,6 +717,7 @@
       <div class="roomcode-display" id="roomCodeDisplay">----</div>
       <div class="waitlist" id="waitlist"></div>
       <button class="primary hidden" id="bothReadyBtn">Începe duelul →</button>
+      <button class="ghost" id="playAloneBtn" style="margin-top:10px;">Joacă singur (Antrenament)</button>
       <p class="footer-note" id="waitNote">Se așteaptă al doilea jucător...</p>
     </div>
 
@@ -1728,6 +1729,20 @@
       });
     }
 
+    document.getElementById('playAloneBtn').addEventListener('click', async () => {
+      if (myRole !== 'p1') return;
+
+      await db.ref(`rooms/${roomCode}/players/p2`).set({
+        name: "Bot Antrenament",
+        joined: true,
+        progress: 25,
+        score: 0,
+        finished: true,
+        answers: []
+      });
+
+      document.getElementById('playAloneBtn').classList.add('hidden');
+    });
 
     /* ============== RESULTS ============== */
     function showResults(data) {
